@@ -1,13 +1,13 @@
 [tool.poetry]
-name = "lazy-log"
+name = "lazy-log-formatter"
 version = "0.1.0"
 description = "A pre-commit script to make log lines lazzier"
 authors = ["Daniel Marín"]
 license = "Apache-2.0"
 readme = "README.md"
 packages = [{ include = "src" }]
-homepage = "https://github.com/dmar1n/lazy-log"
-repository = "https://github.com/dmar1n/lazy-log"
+homepage = "https://github.com/dmar1n/lazy-log-formatter"
+repository = "https://github.com/dmar1n/lazy-log-formatter"
 keywords = [
     "pre-commit",
     "logging",
