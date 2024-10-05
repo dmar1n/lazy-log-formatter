@@ -1,0 +1,16 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.9
+    hooks:
+      - id: ruff
+        args:
+          [
+            --line-length,
+            "120",
+            "--select=ALL",
+            --show-fixes,
+            --fix,
+            "--ignore=D211,D213,D104,FA102,T201,EXE002,TRY300,FBT001,D413",
+          ]
+        files: ^(?!(tests/)).*\.py$
+      - id: ruff-format
