@@ -1,4 +1,4 @@
-# Lazy log
+# Lazy log formatter
 
 Pre-commit hook to automatically detect and convert f-strings in Python code used in log calls to lazy log calls, 
 following W1203 Pylint rule:
