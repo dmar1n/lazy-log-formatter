@@ -1,6 +1,6 @@
-- id: lazylog
-  name: lazylog
+- id: lazy-log-formatter
+  name: lazy-log-formatter
   description: This hook converts f-strings in log lines to %s format.
-  entry: lazylog
+  entry: lazy-log-formatter
   language: python
   types: [python]
