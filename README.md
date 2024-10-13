@@ -11,7 +11,7 @@ To use with pre-commit, add the following to your `.pre-commit-config.yaml`:
 
 ```yaml
 - repo: https://github.com/dmar1n/lazy-log-formatter
-  rev: 0.3.3
+  rev: 0.3.4
   hooks:
     - id: lazy-log-formatter
     args: ['--fix']
@@ -20,3 +20,23 @@ To use with pre-commit, add the following to your `.pre-commit-config.yaml`:
 ## Options
 
 - `--fix`: Automatically fix f-strings used in log calls to lazy log calls.
+
+## Examples
+
+If the `--fix` option is used, the hook will convert f-strings in log calls to lazy log calls, as follows:
+
+```python
+# Before
+logger.info(f'Hello {name}')
+
+# After
+logger.info('Hello %s', name)
+```
+
+```python
+# Before
+logger.info(f'Hello {name} {surname}')
+
+# After
+logger.info('Hello %s %s', name, surname)
+```
