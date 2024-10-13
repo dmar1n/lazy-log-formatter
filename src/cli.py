@@ -9,7 +9,7 @@ F_STRING_PATTERN = re.compile(
     r"""(?:log|logger|logging)\.(?:debug|info|warning|error|critical)\((f[\"'].*[\"'])\)""",
 )
 VAR_PLACEHOLDERS = re.compile(r"{([^}]*)}")
-PROG_NAME = "lazylog"
+PROG_NAME = "lazy-log-formatter"
 
 
 def process_file(file_path: Path | str, fix: bool) -> int:
@@ -32,11 +32,7 @@ def process_file(file_path: Path | str, fix: bool) -> int:
     try:
         content = file_path.read_text(encoding="utf-8")
         if matches := find_f_strings(content):
-            return (
-                fix_f_strings(file_path, content, matches)
-                if fix
-                else print_f_strings(matches, file_path)
-            )
+            return fix_f_strings(file_path, content, matches) if fix else print_f_strings(matches, file_path)
         return 0
 
     except (OSError, re.error) as e:
@@ -82,9 +78,7 @@ def print_f_strings(matches: list[str], file_path: Path) -> int:
         Always returns 1 as f-strings are found.
     """
     for match in matches:
-        line = (
-            file_path.read_text().count("\n", 0, file_path.read_text().index(match)) + 1
-        )
+        line = file_path.read_text().count("\n", 0, file_path.read_text().index(match)) + 1
         print(f"{file_path}:{line}: found f-string in log call ({match})")
 
     return 1
