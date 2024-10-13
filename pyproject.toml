@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "lazy-log-formatter"
-version = "0.3.0"
+version = "0.3.1"
 description = "A pre-commit script to make log lines lazzier"
 authors = ["Daniel Marín"]
 license = "Apache-2.0"
@@ -41,4 +41,4 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
-lazylog = "src.cli:main"
+lazylogformat = "src.cli:main"
