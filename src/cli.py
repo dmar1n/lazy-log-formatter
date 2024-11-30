@@ -32,7 +32,11 @@ def process_file(file_path: Path | str, fix: bool) -> int:
     try:
         content = file_path.read_text(encoding="utf-8")
         if matches := find_f_strings(content):
-            return fix_f_strings(file_path, content, matches) if fix else print_f_strings(matches, file_path)
+            return (
+                fix_f_strings(file_path, content, matches)
+                if fix
+                else print_f_strings(matches, file_path)
+            )
         return 0
 
     except (OSError, re.error) as e:
@@ -78,7 +82,9 @@ def print_f_strings(matches: list[str], file_path: Path) -> int:
         Always returns 1 as f-strings are found.
     """
     for match in matches:
-        line = file_path.read_text().count("\n", 0, file_path.read_text().index(match)) + 1
+        line = (
+            file_path.read_text().count("\n", 0, file_path.read_text().index(match)) + 1
+        )
         print(f"{file_path}:{line}: found f-string in log call ({match})")
 
     return 1
@@ -118,6 +124,9 @@ def convert_f_strings_to_percent_format(content: str, matches: list[str]) -> str
     """
     for match in matches:
         placeholders = VAR_PLACEHOLDERS.findall(match)
+        placeholders = [
+            placeholder.strip().removesuffix("=") for placeholder in placeholders
+        ]
         percent_format = VAR_PLACEHOLDERS.sub("%s", match).removeprefix("f")
         args = ", ".join(placeholders) if placeholders else None
         replacement = f"{percent_format}, {args}" if args else f"{percent_format}"

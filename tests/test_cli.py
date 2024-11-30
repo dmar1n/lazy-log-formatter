@@ -34,6 +34,10 @@ TEST_DATA = [
         'print(f"No f-string here {false_case}.")',
         'print(f"No f-string here {false_case}.")',
     ),
+    (
+        'logger.info(f"My example string {example_string=}")',
+        'logger.info("My example string %s", example_string)',
+    ),
 ]
 
 
