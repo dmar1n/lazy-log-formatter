@@ -11,7 +11,7 @@ To use with pre-commit, add the following to your `.pre-commit-config.yaml`:
 
 ```yaml
 - repo: https://github.com/dmar1n/lazy-log-formatter
-  rev: 0.4.2
+  rev: 0.4.4
   hooks:
     - id: lazy-log-formatter
     args: ['--fix']
@@ -43,8 +43,8 @@ logger.info('Hello %s %s', name, surname)
 
 ## Current limitations
 
-- Only works with `logging` module. Other logging libraries might not work as expected, such as `loguru`.
-- Multi-line f-strings in the editor are not supported yet (they are simply ignored).
+- Only works with the native Python `logging` module. Other libraries, such as `loguru`, do not support lazy calls.
+- Multi-line f-strings in the editor are not supported yet (they are ignored).
 
 For `loguru`, see [Lazy evaluation of expensive functions](https://loguru.readthedocs.io/en/stable/overview.html#lazy-evaluation-of-expensive-functions):
 

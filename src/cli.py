@@ -1,4 +1,13 @@
-"""Module for the CLI of the lazylog package."""
+"""Module for the CLI of the lazylog package.
+
+This file implements the command-line interface (CLI) for the lazylog package, specifically providing a tool to detect
+and optionally fix the use of f-strings in Python logging calls. The main goal is to enforce best practices by
+converting f-strings in log statements to the percent-format style, which is recommended for logging in Python to avoid
+unnecessary string interpolation when the log level is not enabled.
+
+The CLI can be used to scan one or more files, report any found f-strings in logging calls, and optionally rewrite the
+files to use percent-format strings instead. It also provides version information and basic error handling.
+"""
 
 import argparse
 import re
@@ -81,10 +90,10 @@ def print_f_strings(matches: list[str], file_path: Path) -> int:
     Returns:
         Always returns 1 as f-strings are found.
     """
+    file_text = file_path.read_text()
+    lines = file_text.splitlines()
     for match in matches:
-        line = (
-            file_path.read_text().count("\n", 0, file_path.read_text().index(match)) + 1
-        )
+        line = next((i + 1 for i, line in enumerate(lines) if match in line), -1)
         print(f"{file_path}:{line}: found f-string in log call ({match})")
 
     return 1
@@ -156,7 +165,7 @@ def main(argv: list[str] | None = None) -> int:
     if results:
         print(f"💤🐨💤 {PROG_NAME} completed with issues. 💤🐨💤")
 
-    return results
+    return 1 if results else 0
 
 
 if __name__ == "__main__":

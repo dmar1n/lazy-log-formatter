@@ -9,14 +9,14 @@ packages = [{ include = "src" }]
 homepage = "https://github.com/dmar1n/lazy-log-formatter"
 repository = "https://github.com/dmar1n/lazy-log-formatter"
 keywords = [
-    "pre-commit",
-    "logging",
-    "pylint",
-    "lazy logging",
-    "W1203",
-    "f-strings",
     "code-quality",
+    "f-strings",
+    "lazy logging",
     "linting",
+    "logging",
+    "pre-commit",
+    "pylint",
+    "W1203",
 ]
 classifiers = [
     "License :: OSI Approved :: Apache Software License",
@@ -32,7 +32,7 @@ classifiers = [
 python = "^3.10"
 
 [tool.poetry.group.dev.dependencies]
-pre-commit = "^3.8.0"
+pre-commit = "^4.2.0"
 pytest = "^8.3.3"
 pytest-cov = "^5.0.0"
 
