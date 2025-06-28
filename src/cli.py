@@ -45,7 +45,7 @@ def process_file(file_path: Path | str, fix: bool, check_import: bool = False) -
     if fix:
         with file_path.open("w", encoding="utf-8") as file:
             file.write(transformed_content)
-        print(f"F-strings found and fixed in {file_path}.")
+        print(f"F-strings found and fixed in '{file_path}'.")
 
     return 1
 
