@@ -40,15 +40,12 @@ def process_file(file_path: Path | str, fix: bool, check_import: bool = False) -
     transformer = Transformer(file_path, check_import=check_import)
     transformed_content = transformer.run(content)
     if content == transformed_content:
-        print(f"No f-strings found in {file_path}.")
         return 0
 
     if fix:
         with file_path.open("w", encoding="utf-8") as file:
             file.write(transformed_content)
-        print(f"Fixed f-strings in '{file_path}'.")
-    else:
-        print(f"Found f-strings in '{file_path}'.")
+        print(f"F-strings found and fixed in {file_path}.")
 
     return 1
 
@@ -80,6 +77,10 @@ def main(argv: list[str] | None = None) -> int:
     if not all(Path(filename).is_file() for filename in args.filenames):
         print("One or more specified files do not exist or are not files.")
         return 1
+
+    # if filenames not provided, search for all Python files in the current directory
+    if not args.filenames:
+        args.filenames = [str(p) for p in Path().glob("**/*.py")]
 
     results = any(process_file(filename, args.fix) for filename in args.filenames)
 
