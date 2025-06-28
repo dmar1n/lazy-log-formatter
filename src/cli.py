@@ -84,7 +84,7 @@ def main(argv: list[str] | None = None) -> int:
 
     results = any(process_file(filename, args.fix) for filename in args.filenames)
     if results:
-        print(f"💤🐨💤 {PROG_NAME} completed with issues. 💤🐨💤")
+        print(f"{PROG_NAME} completed with issues.")
 
     return 1 if results else 0
 

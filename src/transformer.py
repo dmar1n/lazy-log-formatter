@@ -95,8 +95,6 @@ class Transformer(ast.NodeTransformer):
         ):
             return self.generic_visit(node)
 
-        logger.debug("Found f-string in logging call: %s", ast.dump(node))
-
         f_string = node.args[0]
         parts: list[str] = []
         values: list[ast.expr] = []
@@ -122,6 +120,15 @@ class Transformer(ast.NodeTransformer):
         kind = getattr(node, "kind", None)
         converted_string = ast.Constant(value="".join(parts), kind=kind)
         new_args = [converted_string, *values]
+
+        # log the file path and line number for debugging
+        logger.info(
+            "Transforming logging call at %s:%d: %s -> %s",
+            node.lineno,
+            node.col_offset,
+            ast.dump(node),
+            new_args,
+        )
 
         return ast.Call(func=node.func, args=new_args, keywords=node.keywords)
 
