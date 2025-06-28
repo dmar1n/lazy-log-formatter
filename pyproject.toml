@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "lazy-log-formatter"
-version = "0.4.6"
+version = "0.5.0"
 description = "A pre-commit script to make log lines lazzier"
 authors = ["Daniel Marín"]
 license = "Apache-2.0"
@@ -30,6 +30,8 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = "^3.10"
+black = "^25.1.0"
+hypothesis = "^6.135.16"
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^4.2.0"

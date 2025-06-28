@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.11.13
+    rev: v0.12.1
     hooks:
       - id: ruff
         args:
@@ -10,7 +10,7 @@ repos:
             "--select=ALL",
             --show-fixes,
             --fix,
-            "--ignore=D211,D213,D104,FA102,T201,EXE002,TRY300,FBT001,D413",
+            "--ignore=D211,D213,D104,FA102,T201,EXE002,TRY300,FBT001,D413,D203,N802,D205,FBT002",
           ]
         files: ^(?!(tests/)).*\.py$
       - id: ruff-format

@@ -1,6 +1,7 @@
 # Lazy log formatter
 
-Pre-commit hook to automatically detect and convert f-strings in Python code used in log calls to lazy log calls, 
+Pre-commit hook to automatically detect and convert f-strings in Python code to 
+[printf-style](https://docs.python.org/3/library/stdtypes.html#printf-style-string-formatting) logging calls,
 following W1203 Pylint rule:
 
 https://pylint.readthedocs.io/en/stable/user_guide/messages/warning/logging-fstring-interpolation.html
@@ -11,7 +12,7 @@ To use with pre-commit, add the following to your `.pre-commit-config.yaml`:
 
 ```yaml
 - repo: https://github.com/dmar1n/lazy-log-formatter
-  rev: 0.4.6
+  rev: 0.5.0
   hooks:
     - id: lazy-log-formatter
     args: ['--fix']
@@ -43,8 +44,7 @@ logger.info('Hello %s %s', name, surname)
 
 ## Current limitations
 
-- Only works with the native Python `logging` module. Other libraries, such as `loguru`, do not support lazy calls.
-- Multi-line f-strings in the editor are not supported yet (they are ignored).
+Only works with the native Python `logging` module. Other libraries, such as `loguru`, do not support lazy calls.
 
 For `loguru`, see [Lazy evaluation of expensive functions](https://loguru.readthedocs.io/en/stable/overview.html#lazy-evaluation-of-expensive-functions):
 
