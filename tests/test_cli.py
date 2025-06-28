@@ -129,7 +129,7 @@ def temp_logging_fstring_file(request):
 class TestConvertFStringsToPercentFormat:
     @mark.parametrize("content, expected", TEST_DATA)
     def test_transform(self, content, expected):
-        transformer = Transformer(check_import=False)
+        transformer = Transformer(Path(), check_import=False)
         result = transformer.run(content)
         assert result == expected, f"Expected {expected}, but got {result}"
 
@@ -138,7 +138,7 @@ class TestTransformerHypothesis:
     @given(st.from_regex(r'f["\"][^\n]*["\"]', fullmatch=True))
     def test_fstring_transformation_does_not_crash(self, s):
         # The transformer should not raise exceptions on any f-string
-        transformer = Transformer(check_import=False)
+        transformer = Transformer(Path(), check_import=False)
         try:
             transformer.run(s)
         except (ValueError, SyntaxError) as e:

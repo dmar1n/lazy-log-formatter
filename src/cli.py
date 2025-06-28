@@ -37,9 +37,8 @@ def process_file(file_path: Path | str, fix: bool, check_import: bool = False) -
     with file_path.open("r", encoding="utf-8") as file:
         content = file.read()
 
-    transformer = Transformer(check_import=check_import)
+    transformer = Transformer(file_path, check_import=check_import)
     transformed_content = transformer.run(content)
-
     if content == transformed_content:
         print(f"No f-strings found in {file_path}.")
         return 0
@@ -49,7 +48,7 @@ def process_file(file_path: Path | str, fix: bool, check_import: bool = False) -
             file.write(transformed_content)
         print(f"Fixed f-strings in {file_path}.")
     else:
-        print(f"Found f-strings in {file_path}:\n{transformed_content}")
+        print(f"Found f-strings in {file_path}: {file_path.name}")
 
     return 1
 

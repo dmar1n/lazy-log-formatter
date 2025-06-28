@@ -22,6 +22,7 @@ The file relies on Python's ast module for parsing and transforming code, and on
 
 import ast
 import logging
+from pathlib import Path
 
 import black
 
@@ -56,16 +57,22 @@ class Transformer(ast.NodeTransformer):
     This class extends ast.NodeTransformer to traverse the AST and modify logging calls that use f-strings.
     It specifically targets calls to logging methods (debug, info, warning, error, critical) on variables
     whose names start with 'log', and transforms f-string arguments into format strings with placeholders.
+
+    Attributes:
+        __check_import: If True, the transformer will check if the logging module is imported in the code.
+        __file_path: The path to the file being transformed, used for logging purposes.
     """
 
-    def __init__(self, check_import: bool = False) -> None:
+    def __init__(self, file_path: Path, check_import: bool = False) -> None:
         """Initialize the Transformer with an option to check for logging imports.
 
         Args:
             check_import: If True, the transformer will check if the logging module is imported in the code.
+            file_path: The path to the file being transformed, used for logging purposes.
         """
         super().__init__()
         self.__check_import = check_import
+        self.__file_path: Path = file_path
 
     def visit_Call(self, node: ast.Call) -> ast.AST:
         """Visit a function call node in the AST and transform logging calls that use f-strings
@@ -96,6 +103,8 @@ class Transformer(ast.NodeTransformer):
             return self.generic_visit(node)
 
         f_string = node.args[0]
+        self.__print_issue(node, f_string)
+
         parts: list[str] = []
         values: list[ast.expr] = []
 
@@ -121,16 +130,14 @@ class Transformer(ast.NodeTransformer):
         converted_string = ast.Constant(value="".join(parts), kind=kind)
         new_args = [converted_string, *values]
 
-        # log the file path and line number for debugging
-        logger.info(
-            "Transforming logging call at %s:%d: %s -> %s",
-            node.lineno,
-            node.col_offset,
-            ast.dump(node),
-            new_args,
-        )
-
         return ast.Call(func=node.func, args=new_args, keywords=node.keywords)
+
+    def __print_issue(self, node: ast.Call, f_string: str) -> None:
+        print(
+            f"Transforming logging call at {self.__file_path}:%s: %s",
+            node.lineno,
+            f_string,
+        )
 
     def run(self, content: str) -> str:
         """Transform the given Python source code by visiting and potentially modifying its AST.
