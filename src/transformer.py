@@ -103,7 +103,7 @@ class Transformer(ast.NodeTransformer):
             return self.generic_visit(node)
 
         f_string = node.args[0]
-        self.__print_issue(node, f_string)
+        self.__print_issue(node, ast.unparse(f_string))
 
         parts: list[str] = []
         values: list[ast.expr] = []
@@ -134,9 +134,7 @@ class Transformer(ast.NodeTransformer):
 
     def __print_issue(self, node: ast.Call, f_string: str) -> None:
         print(
-            f"Transforming logging call at {self.__file_path}:%s: %s",
-            node.lineno,
-            f_string,
+            f"F-string in logging call at {self.__file_path}:{node.lineno}: {f_string}",
         )
 
     def run(self, content: str) -> str:

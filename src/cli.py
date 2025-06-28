@@ -46,9 +46,9 @@ def process_file(file_path: Path | str, fix: bool, check_import: bool = False) -
     if fix:
         with file_path.open("w", encoding="utf-8") as file:
             file.write(transformed_content)
-        print(f"Fixed f-strings in {file_path}.")
+        print(f"Fixed f-strings in '{file_path}'.")
     else:
-        print(f"Found f-strings in {file_path}: {file_path.name}")
+        print(f"Found f-strings in '{file_path}'.")
 
     return 1
 
@@ -82,8 +82,6 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     results = any(process_file(filename, args.fix) for filename in args.filenames)
-    if results:
-        print(f"{PROG_NAME} completed with issues.")
 
     return 1 if results else 0
 
