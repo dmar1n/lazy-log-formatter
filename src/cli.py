@@ -15,7 +15,7 @@ from pathlib import Path
 
 from src.transformer import Transformer
 
-PROG_NAME = "lazylog"
+PROG_NAME = "lazy-log-formatter"
 
 
 def process_file(file_path: Path | str, fix: bool, check_import: bool = False) -> int:
