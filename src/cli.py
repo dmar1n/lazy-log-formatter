@@ -7,6 +7,16 @@ unnecessary string interpolation when the log level is not enabled.
 
 The CLI can be used to scan one or more files, report any found f-strings in logging calls, and optionally rewrite the
 files to use percent-format strings instead. It also provides version information and basic error handling.
+
+Example usage:
+    # Check all Python files in the current directory and subdirectories
+    python -m src.cli
+
+    # Check all Python files in two directories
+    python -m src.cli src/ tests/
+
+    # Fix issues in all Python files in a directory
+    python -m src.cli mydir --fix
 """
 
 import argparse
@@ -60,7 +70,12 @@ def main(argv: list[str] | None = None) -> int:
         Returns 0 if the conversion is successful, otherwise returns 1.
     """
     parser = argparse.ArgumentParser(prog=PROG_NAME)
-    parser.add_argument("filenames", nargs="*", help="Filenames to process.")
+    parser.add_argument(
+        "dirs",
+        nargs="*",
+        default=["."],
+        help="One or more directories to search for Python files. Defaults to current directory if not specified.",
+    )
     parser.add_argument("--fix", help="Fix issues found in file.", action="store_true")
     parser.add_argument(
         "--version",
@@ -69,20 +84,16 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
-    if not args.filenames:
-        print("No filenames provided. Please specify files to process.")
-        parser.print_help()
-        return 1
+    all_files: set[Path] = set()
+    for dir_str in args.dirs:
+        directory = Path(dir_str).resolve()
+        if not directory.is_dir():
+            print(f"Directory {directory} does not exist or is not a directory.")
+            continue
+        all_files.update(path.resolve() for path in directory.rglob("*.py"))
 
-    if not all(Path(filename).is_file() for filename in args.filenames):
-        print("One or more specified files do not exist or are not files.")
-        return 1
-
-    # if filenames not provided, search for all Python files in the current directory
-    if not args.filenames:
-        args.filenames = [str(p) for p in Path().glob("**/*.py")]
-
-    results = any(process_file(filename, args.fix) for filename in args.filenames)
+    filenames = [str(f) for f in sorted(all_files)]
+    results = [1 for filename in filenames if process_file(filename, fix=args.fix) == 1]
 
     return 1 if results else 0
 

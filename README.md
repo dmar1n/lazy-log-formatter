@@ -12,17 +12,36 @@ To use with pre-commit, add the following to your `.pre-commit-config.yaml`:
 
 ```yaml
 - repo: https://github.com/dmar1n/lazy-log-formatter
-  rev: 0.5.5
+  rev: 0.6.0
   hooks:
     - id: lazy-log-formatter
-    args: ['--fix']
+    args: ['--fix', '.']
 ```
 
 ## Options
 
 - `--fix`: Automatically fix f-strings used in log calls to lazy log calls.
+- `DIR [DIR ...]`: One or more directories to search for Python files. If not specified, defaults to the current directory.
 
 ## Examples
+
+Check all Python files in the current directory and subdirectories:
+
+```sh
+python -m src.cli
+```
+
+Check all Python files in two directories:
+
+```sh
+python -m src.cli src/ tests/
+```
+
+Fix issues in all Python files in a directory:
+
+```sh
+python -m src.cli mydir --fix
+```
 
 If the `--fix` option is used, the hook will convert f-strings in log calls to lazy log calls, as follows:
 

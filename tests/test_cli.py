@@ -99,6 +99,10 @@ TEST_DATA = [
         'logger.info(f"Empty f-string with braces: {{}}")',
         'logger.info("Empty f-string with braces: {}")',
     ),
+    (
+        'logger.info(f"{value} created with specs: {self.__specs}")',
+        'logger.info("%s created with specs: %s", value, self.__specs)',
+    ),
 ]
 
 STANDARD_LOGGING_IMPORT = (
