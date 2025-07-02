@@ -1,3 +1,5 @@
+![PyPI - Version](https://img.shields.io/pypi/v/lazy-log-formatter)
+
 # Lazy log formatter
 
 Pre-commit hook to automatically detect and convert f-strings in Python code to 
