@@ -1,4 +1,6 @@
-![PyPI - Version](https://img.shields.io/pypi/v/lazy-log-formatter)
+![PyPI - Version](https://img.shields.io/pypi/v/lazy-log-formatter) 
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/dmar1n/lazy-log-formatter/.github%2Fworkflows%2Frelease.yaml)
+
 
 # Lazy log formatter
 
