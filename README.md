@@ -20,7 +20,7 @@ To use it with pre-commit, add the following lines to your `.pre-commit-config.y
   rev: 0.6.0
   hooks:
     - id: lazy-log-formatter
-      args: ['--fix', '.']
+      args: ['--fix']
 ```
 
 ## Options
