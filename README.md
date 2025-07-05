@@ -13,14 +13,14 @@ https://pylint.readthedocs.io/en/stable/user_guide/messages/warning/logging-fstr
 
 ## Usage
 
-To use with pre-commit, add the following to your `.pre-commit-config.yaml`:
+To use it with pre-commit, add the following lines to your `.pre-commit-config.yaml`:
 
 ```yaml
 - repo: https://github.com/dmar1n/lazy-log-formatter
   rev: 0.6.0
   hooks:
     - id: lazy-log-formatter
-    args: ['--fix', '.']
+      args: ['--fix', '.']
 ```
 
 ## Options
@@ -66,7 +66,7 @@ logger.info(f'Hello {name} {surname}')
 logger.info('Hello %s %s', name, surname)
 ```
 
-## Current limitations
+### Important
 
 Only works with the native Python `logging` module. Other libraries, such as `loguru`, do not support lazy calls.
 
