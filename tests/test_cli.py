@@ -96,8 +96,8 @@ TEST_DATA = [
         'logger.info("Empty f-string with percent: {} %%")',
     ),
     (
-        'logger.info(f"Empty f-string with braces: {{}}")',
-        'logger.info("Empty f-string with braces: {}")',
+        'self._logger.info(f"Empty f-string with braces: {{}}")',
+        'self._logger.info("Empty f-string with braces: {}")',
     ),
     (
         '__logger.info(f"{value} created with specs: {self.__specs}")',

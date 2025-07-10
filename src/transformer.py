@@ -29,7 +29,7 @@ import black
 
 logger = logging.getLogger(__name__)
 
-LOG_CALL_PATTERN = re.compile(r"^[_]{,2}log.*", re.IGNORECASE)
+LOG_CALL_PATTERN = re.compile(r"^[_]{,2}log", re.IGNORECASE)
 
 
 def has_logging_import(content: str) -> bool:
@@ -95,13 +95,41 @@ class Transformer(ast.NodeTransformer):
         Returns:
            The transformed AST node if applicable, otherwise the result of generic_visit.
         """
-        if (
-            not isinstance(node.func, ast.Attribute)
-            or not isinstance(node.func.value, ast.Name)
-            or not isinstance(node.args[0], ast.JoinedStr)
-            or not LOG_CALL_PATTERN.match(node.func.value.id)
-            or node.func.attr not in {"debug", "info", "warning", "error", "critical"}
-            or not node.args
+
+        def is_logging_method(attr: str) -> bool:
+            return attr in {"debug", "info", "warning", "error", "critical"}
+
+        def is_log_variable(node_value: ast.expr) -> bool:
+            """Check if the node value is a logging variable."""
+            return (
+                isinstance(node_value, ast.Name)
+                and LOG_CALL_PATTERN.match(node_value.id) is not None
+            ) or (
+                isinstance(node_value, ast.Attribute)
+                and hasattr(node_value, "attr")
+                and LOG_CALL_PATTERN.match(node_value.attr) is not None
+            )
+
+        is_func_attribute = isinstance(node.func, ast.Attribute)
+        has_args = bool(node.args)
+        is_first_arg_fstring = has_args and isinstance(node.args[0], ast.JoinedStr)
+        is_log_call = (
+            is_func_attribute
+            and hasattr(node.func, "value")
+            and is_log_variable(node.func.value)
+        )
+        is_logging_func = (
+            is_func_attribute
+            and hasattr(node.func, "attr")
+            and is_logging_method(node.func.attr)
+        )
+
+        if not (
+            is_func_attribute
+            and has_args
+            and is_first_arg_fstring
+            and is_log_call
+            and is_logging_func
         ):
             return self.generic_visit(node)
 
@@ -111,22 +139,26 @@ class Transformer(ast.NodeTransformer):
         parts: list[str] = []
         values: list[ast.expr] = []
 
-        for value in f_string.values:
-            if isinstance(value, ast.Constant):
-                if isinstance(value.value, str):
-                    escaped_value = value.value.replace("%", "%%")
-                    parts.append(escaped_value)
-            elif isinstance(value, ast.FormattedValue):
-                if value.format_spec and isinstance(value.format_spec, ast.JoinedStr):
-                    fmt = "".join(
-                        str(val.value)
-                        for val in value.format_spec.values
-                        if isinstance(val, ast.Constant)
-                    )
-                    parts.append(f"%{fmt}")
-                else:
-                    parts.append("%s")
-                values.append(value.value)
+        if isinstance(f_string, ast.JoinedStr):
+            for value in f_string.values:
+                if isinstance(value, ast.Constant):
+                    if isinstance(value.value, str):
+                        escaped_value = value.value.replace("%", "%%")
+                        parts.append(escaped_value)
+                elif isinstance(value, ast.FormattedValue):
+                    if value.format_spec and isinstance(
+                        value.format_spec,
+                        ast.JoinedStr,
+                    ):
+                        fmt = "".join(
+                            str(val.value)
+                            for val in value.format_spec.values
+                            if isinstance(val, ast.Constant)
+                        )
+                        parts.append(f"%{fmt}")
+                    else:
+                        parts.append("%s")
+                    values.append(value.value)
 
         format_str = "".join(parts)
         kind = getattr(node, "kind", None)
