@@ -17,7 +17,7 @@ To use it with pre-commit, add the following lines to your `.pre-commit-config.y
 
 ```yaml
 - repo: https://github.com/dmar1n/lazy-log-formatter
-  rev: 0.6.0
+  rev: 0.6.1
   hooks:
     - id: lazy-log-formatter
       args: ['--fix']

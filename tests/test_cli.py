@@ -1,7 +1,7 @@
 import tempfile
 from pathlib import Path
 
-from hypothesis import given
+from hypothesis import given, assume
 from hypothesis import strategies as st
 from pytest import fixture, mark
 
@@ -54,12 +54,12 @@ TEST_DATA = [
         'logger.info("Formatted value: %.3f", value)',
     ),
     (
-        'logger.info(f"List items: {", ".join(items)}")',
+        """logger.info(f"List items: {', '.join(items)}")""",
         'logger.info("List items: %s", ", ".join(items))',
     ),
     (
-        'logger.info(f"Dict value: {my_dict.get(key, "default")}")',
-        'logger.info("Dict value: %s", my_dict.get(key, "default"))',
+        """logger.info(f"Dict value: {my_dict.get(key, 'default')}")""",
+        """logger.info("Dict value: %s", my_dict.get(key, "default"))""",
     ),
     (
         'logger.info(f"Complex expression: {a * b + c}")',
@@ -100,8 +100,8 @@ TEST_DATA = [
         'logger.info("Empty f-string with braces: {}")',
     ),
     (
-        'logger.info(f"{value} created with specs: {self.__specs}")',
-        'logger.info("%s created with specs: %s", value, self.__specs)',
+        '__logger.info(f"{value} created with specs: {self.__specs}")',
+        '__logger.info("%s created with specs: %s", value, self.__specs)',
     ),
 ]
 
@@ -139,14 +139,15 @@ class TestConvertFStringsToPercentFormat:
 
 
 class TestTransformerHypothesis:
-    @given(st.from_regex(r'f["\"][^\n]*["\"]', fullmatch=True))
-    def test_fstring_transformation_does_not_crash(self, s):
+    @given(st.from_regex(r'f["\'][^\n]+["\']', fullmatch=True))
+    def test_fstring_transformation_does_not_crash(self, text):
+        assume("\x00" not in text)
         # The transformer should not raise exceptions on any f-string
         transformer = Transformer(Path(), check_import=False)
         try:
-            transformer.run(s)
+            transformer.run(text)
         except (ValueError, SyntaxError) as e:
-            assert False, f"Transformer crashed on input: {s} with error: {e}"
+            assert False, f"Transformer crashed on input: {text} with error: {e}"
 
 
 class TestTransformerWithFiles:

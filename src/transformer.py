@@ -22,11 +22,14 @@ The file relies on Python's ast module for parsing and transforming code, and on
 
 import ast
 import logging
+import re
 from pathlib import Path
 
 import black
 
 logger = logging.getLogger(__name__)
+
+LOG_CALL_PATTERN = re.compile(r"^[_]{,2}log.*", re.IGNORECASE)
 
 
 def has_logging_import(content: str) -> bool:
@@ -95,10 +98,10 @@ class Transformer(ast.NodeTransformer):
         if (
             not isinstance(node.func, ast.Attribute)
             or not isinstance(node.func.value, ast.Name)
-            or not node.func.value.id.lower().startswith("log")
+            or not isinstance(node.args[0], ast.JoinedStr)
+            or not LOG_CALL_PATTERN.match(node.func.value.id)
             or node.func.attr not in {"debug", "info", "warning", "error", "critical"}
             or not node.args
-            or not isinstance(node.args[0], ast.JoinedStr)
         ):
             return self.generic_visit(node)
 
@@ -125,9 +128,9 @@ class Transformer(ast.NodeTransformer):
                     parts.append("%s")
                 values.append(value.value)
 
-        # Preserve the kind from the original node if available (e.g., unicode or bytes)
+        format_str = "".join(parts)
         kind = getattr(node, "kind", None)
-        converted_string = ast.Constant(value="".join(parts), kind=kind)
+        converted_string = ast.Constant(value=format_str, kind=kind)
         new_args = [converted_string, *values]
 
         return ast.Call(func=node.func, args=new_args, keywords=node.keywords)
