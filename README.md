@@ -66,6 +66,64 @@ logger.info(f'Hello {name} {surname}')
 logger.info('Hello %s %s', name, surname)
 ```
 
+### Example in a Python class
+
+```python
+import logging
+from datetime import datetime
+
+
+def log_and_return_datetime():
+    now = datetime.now()
+    logging.info(f"Current datetime: {now}")
+    return now
+
+
+class DateTimeLogger:
+    def __init__(self):
+        self._logger = logging.getLogger(self.__class__.__name__)
+
+    def log_datetime(self):
+        now = datetime.now()
+        self._logger.info(f"Current datetime: {now}")
+        return now
+```
+
+```bash
+python src\cli.py tests\data
+```
+
+The output will be:
+
+```text
+F-string in logging call at ...\tests\data\test.py:8: f'Current datetime: {now}'
+F-string in logging call at ...\tests\data\test.py:18: f'Current datetime: {now}'
+F-strings found and fixed in '...\tests\data\test.py'.
+```
+
+After running the formatter, the code will be transformed to:
+
+```python
+import logging
+from datetime import datetime
+
+
+def log_and_return_datetime():
+    now = datetime.now()
+    logging.info("Current datetime: %s", now)
+    return now
+
+
+class DateTimeLogger:
+    def __init__(self):
+        self._logger = logging.getLogger(self.__class__.__name__)
+
+    def log_datetime(self):
+        now = datetime.now()
+        self._logger.info("Current datetime: %s", now)
+        return now
+```
+
 ### Important
 
 Only works with the native Python `logging` module. Other libraries, such as `loguru`, do not support lazy calls.
