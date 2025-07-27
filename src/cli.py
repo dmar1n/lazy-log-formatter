@@ -1,6 +1,6 @@
 """Module for the CLI of the lazylog package.
 
-This file implements the command-line interface (CLI) for the lazylog package, specifically providing a tool to detect
+This module implements the command-line interface (CLI) for the lazylog package, specifically providing a tool to detect
 and optionally fix the use of f-strings in Python logging calls. The main goal is to enforce best practices by
 converting f-strings in log statements to the percent-format style, which is recommended for logging in Python to avoid
 unnecessary string interpolation when the log level is not enabled.
@@ -20,6 +20,7 @@ Example usage:
 """
 
 import argparse
+import sys
 from importlib.metadata import version
 from pathlib import Path
 
@@ -41,22 +42,21 @@ def process_file(file_path: Path | str, fix: bool, check_import: bool = False) -
     """
     file_path = Path(file_path)
     if not file_path.is_file():
-        print(f"File {file_path} does not exist or is not a file.")
         return 1
-
     with file_path.open("r", encoding="utf-8") as file:
         content = file.read()
-
     transformer = Transformer(file_path, check_import=check_import)
     transformed_content = transformer.run(content)
-    if content == transformed_content:
+    if content == transformed_content or not transformer.issues:
         return 0
-
     if fix:
         with file_path.open("w", encoding="utf-8") as file:
             file.write(transformed_content)
         print(f"F-strings found and fixed in '{file_path}'.")
-
+    elif transformer.issues:
+        print(f"F-strings found in '{file_path}':")
+        for issue in transformer.issues:
+            print(f"  - {issue}")
     return 1
 
 
@@ -83,18 +83,21 @@ def main(argv: list[str] | None = None) -> int:
         version=f"%(prog)s {version(PROG_NAME)}",
     )
     args = parser.parse_args(argv)
-
     all_files: set[Path] = set()
+    if not args.dirs:
+        args.dirs = ["."]
+
     for dir_str in args.dirs:
         directory = Path(dir_str).resolve()
         if not directory.is_dir():
-            print(f"Directory {directory} does not exist or is not a directory.")
+            print(
+                f"Warning: '{dir_str}' is not a directory and will be ignored.",
+                file=sys.stderr,
+            )
             continue
         all_files.update(path.resolve() for path in directory.rglob("*.py"))
-
     filenames = [str(f) for f in sorted(all_files)]
-    results = [1 for filename in filenames if process_file(filename, fix=args.fix) == 1]
-
+    results = sum(process_file(filename, fix=args.fix) == 1 for filename in filenames)
     return 1 if results else 0
 
 

@@ -28,8 +28,7 @@ from pathlib import Path
 import black
 
 logger = logging.getLogger(__name__)
-
-LOG_CALL_PATTERN = re.compile(r"^[_]{,2}log", re.IGNORECASE)
+LOG_CALL_PATTERN = re.compile("^[_]{,2}log", re.IGNORECASE)
 
 
 def has_logging_import(content: str) -> bool:
@@ -48,7 +47,7 @@ def has_logging_import(content: str) -> bool:
     return any(
         (
             isinstance(node, ast.Import)
-            and any(alias.name == "logging" for alias in node.names)
+            and any((alias.name == "logging" for alias in node.names))
         )
         or (isinstance(node, ast.ImportFrom) and node.module == "logging")
         for node in ast.walk(tree)
@@ -76,6 +75,16 @@ class Transformer(ast.NodeTransformer):
         super().__init__()
         self.__check_import = check_import
         self.__file_path: Path = file_path
+        self.__issues: list[str] = []
+
+    @property
+    def issues(self) -> list[str]:
+        """Get the list of issues found during the transformation.
+
+        Returns:
+            A list of strings representing issues found in the code.
+        """
+        return self.__issues
 
     def visit_Call(self, node: ast.Call) -> ast.AST:
         """Visit a function call node in the AST and transform logging calls that use f-strings
@@ -107,7 +116,7 @@ class Transformer(ast.NodeTransformer):
             ) or (
                 isinstance(node_value, ast.Attribute)
                 and hasattr(node_value, "attr")
-                and LOG_CALL_PATTERN.match(node_value.attr) is not None
+                and (LOG_CALL_PATTERN.match(node_value.attr) is not None)
             )
 
         is_func_attribute = isinstance(node.func, ast.Attribute)
@@ -123,7 +132,6 @@ class Transformer(ast.NodeTransformer):
             and hasattr(node.func, "attr")
             and is_logging_method(node.func.attr)
         )
-
         if not (
             is_func_attribute
             and has_args
@@ -132,13 +140,10 @@ class Transformer(ast.NodeTransformer):
             and is_logging_func
         ):
             return self.generic_visit(node)
-
         f_string = node.args[0]
-        self.__print_issue(node, ast.unparse(f_string))
-
+        self.__register_issue(node, ast.unparse(f_string))
         parts: list[str] = []
         values: list[ast.expr] = []
-
         if isinstance(f_string, ast.JoinedStr):
             for value in f_string.values:
                 if isinstance(value, ast.Constant):
@@ -159,18 +164,15 @@ class Transformer(ast.NodeTransformer):
                     else:
                         parts.append("%s")
                     values.append(value.value)
-
         format_str = "".join(parts)
         kind = getattr(node, "kind", None)
         converted_string = ast.Constant(value=format_str, kind=kind)
         new_args = [converted_string, *values]
-
         return ast.Call(func=node.func, args=new_args, keywords=node.keywords)
 
-    def __print_issue(self, node: ast.Call, f_string: str) -> None:
-        print(
-            f"F-string in logging call at {self.__file_path}:{node.lineno}: {f_string}",
-        )
+    def __register_issue(self, node: ast.Call, f_string: str) -> None:
+        issue_message = f"F-string in logging call at '{self.__file_path}:{node.lineno}': {f_string}"
+        self.__issues.append(issue_message)
 
     def run(self, content: str) -> str:
         """Transform the given Python source code by visiting and potentially modifying its AST.
@@ -183,16 +185,14 @@ class Transformer(ast.NodeTransformer):
         Returns:
             The transformed Python source code as a string.
         """
-        if self.__check_import and not has_logging_import(content):
+        if self.__check_import and (not has_logging_import(content)):
             logger.debug("No logging import found in the content.")
             return content
-
         try:
             tree = ast.parse(content)
         except SyntaxError as e:
             logger.debug("Invalid Python syntax: %s", e)
             return content
-
         tree = self.visit(tree)
         result = ast.unparse(tree)
         logger.debug("Transformed code:\n%s", result)
@@ -235,10 +235,10 @@ class Visitor(ast.NodeVisitor):
         if (
             not isinstance(node.func, ast.Attribute)
             or not isinstance(node.func.value, ast.Name)
-            or not node.func.value.id.lower().startswith("log")
-            or node.func.attr not in {"debug", "info", "warning", "error", "critical"}
-            or not node.args
-            or not isinstance(node.args[0], ast.JoinedStr)
+            or (not node.func.value.id.lower().startswith("log"))
+            or (node.func.attr not in {"debug", "info", "warning", "error", "critical"})
+            or (not node.args)
+            or (not isinstance(node.args[0], ast.JoinedStr))
         ):
             print(f"Found possible f-string in logging call: {ast.dump(node)}")
         self.generic_visit(node)
