@@ -1,7 +1,7 @@
 import tempfile
 from pathlib import Path
 
-from hypothesis import given, assume
+from hypothesis import assume, given
 from hypothesis import strategies as st
 from pytest import fixture, mark
 
@@ -102,6 +102,10 @@ TEST_DATA = [
     (
         '__logger.info(f"{value} created with specs: {self.__specs}")',
         '__logger.info("%s created with specs: %s", value, self.__specs)',
+    ),
+    (
+        "# Logger usage without f-string remains unchanged",
+        "# Logger usage without f-string remains unchanged",
     ),
 ]
 

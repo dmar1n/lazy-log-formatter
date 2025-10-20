@@ -1,3 +1,6 @@
+# This is a test file for logging current datetime information.
+# It includes functions and a class that log the current datetime using f-strings.
+
 import logging
 from datetime import datetime
 
