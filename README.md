@@ -17,7 +17,7 @@ To use it with pre-commit, add the following lines to your `.pre-commit-config.y
 
 ```yaml
 - repo: https://github.com/dmar1n/lazy-log-formatter
-  rev: 0.8.0
+  rev: 0.8.1
   hooks:
     - id: lazy-log-formatter
       args: ['--fix']
@@ -26,7 +26,7 @@ To use it with pre-commit, add the following lines to your `.pre-commit-config.y
 ## Options
 
 - `--fix`: Automatically fix f-strings used in log calls to lazy log calls.
-- `DIR [DIR ...]`: One or more directories to search for Python files. If not specified, defaults to the current directory.
+- `PATH [PATH ...]`: One or more directories or files to process. If not specified, defaults to the current directory.
 
 ## Examples
 
@@ -40,6 +40,12 @@ Check all Python files in two directories:
 
 ```sh
 python -m src.cli src/ tests/
+```
+
+Check specific files:
+
+```sh
+python -m src.cli src/cli.py tests/test_cli.py
 ```
 
 Fix issues in all Python files in a directory:

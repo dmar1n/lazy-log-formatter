@@ -71,10 +71,10 @@ def main(argv: list[str] | None = None) -> int:
     """
     parser = argparse.ArgumentParser(prog=PROG_NAME)
     parser.add_argument(
-        "dirs",
-        nargs="*",
+        "paths",
+        nargs="+",
         default=["."],
-        help="One or more directories to search for Python files. Defaults to current directory if not specified.",
+        help="One or more directories or files to process. Defaults to current directory if not specified.",
     )
     parser.add_argument("--fix", help="Fix issues found in file.", action="store_true")
     parser.add_argument(
@@ -83,19 +83,20 @@ def main(argv: list[str] | None = None) -> int:
         version=f"%(prog)s {version(PROG_NAME)}",
     )
     args = parser.parse_args(argv)
-    all_files: set[Path] = set()
-    if not args.dirs:
-        args.dirs = ["."]
 
-    for dir_str in args.dirs:
-        directory = Path(dir_str).resolve()
-        if not directory.is_dir():
+    all_files: set[Path] = set()
+    for path_str in args.paths:
+        path = Path(path_str).resolve()
+        if path.is_file():
+            all_files.add(path)
+        elif path.is_dir():
+            all_files.update(p.resolve() for p in path.rglob("*.py"))
+        else:
             print(
-                f"Warning: '{dir_str}' is not a directory and will be ignored.",
+                f"Warning: '{path_str}' is not a valid file or directory and will be ignored.",
                 file=sys.stderr,
             )
-            continue
-        all_files.update(path.resolve() for path in directory.rglob("*.py"))
+
     filenames = [str(f) for f in sorted(all_files)]
     results = sum(process_file(filename, fix=args.fix) == 1 for filename in filenames)
     return 1 if results else 0
