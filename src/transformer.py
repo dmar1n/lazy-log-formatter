@@ -135,7 +135,11 @@ class Transformer(cst.CSTTransformer):
                         else getattr(part.format_spec, "value", "")
                     )
                     fmt = fmt.replace("{", "").replace("}", "")
-                    parts.append(f"%{fmt}")
+
+                    if fmt == ",":
+                        parts.append("%s")
+                    else:
+                        parts.append(f"%{fmt}")
                 else:
                     parts.append("%s")
                 values.append(part.expression)

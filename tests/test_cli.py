@@ -107,6 +107,10 @@ TEST_DATA = [
         "# Logger usage without f-string remains unchanged",
         "# Logger usage without f-string remains unchanged",
     ),
+    (
+        'logger.info(f"Reading {len(paths):,} files for {name1} - {name2} - {service}...")',
+        'logger.info("Reading %s files for %s - %s - %s...", len(paths), name1, name2, service)',
+    ),
 ]
 
 STANDARD_LOGGING_IMPORT = (
