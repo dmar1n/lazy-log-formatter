@@ -5,7 +5,7 @@ description = "A pre-commit script to make log lines lazzier"
 authors = ["Daniel Marín"]
 license = "Apache-2.0"
 readme = "README.md"
-packages = [{ include = "src" }]
+packages = [{ include = "lazy_log", from = "src" }]
 homepage = "https://github.com/dmar1n/lazy-log-formatter"
 repository = "https://github.com/dmar1n/lazy-log-formatter"
 keywords = [
@@ -44,4 +44,4 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
-lazylogformat = "src.cli:main"
+lazylogformat = "lazy_log.cli:main"

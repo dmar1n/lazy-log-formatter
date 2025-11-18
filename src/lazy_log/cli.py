@@ -24,7 +24,7 @@ import sys
 from importlib.metadata import version
 from pathlib import Path
 
-from src.transformer import Transformer
+from lazy_log.transformer import Transformer
 
 PROG_NAME = "lazy-log-formatter"
 
