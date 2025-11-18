@@ -27,6 +27,7 @@ from pathlib import Path
 from lazy_log.transformer import Transformer
 
 PROG_NAME = "lazy-log-formatter"
+VENV_DIRS = {".venv", ".env"}
 
 
 def process_file(file_path: Path | str, fix: bool, check_import: bool = False) -> int:
@@ -85,12 +86,20 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     all_files: set[Path] = set()
+
+    def is_in_venv(path: Path) -> bool:
+        parts = set(path.parts)
+        return any(venv in parts for venv in VENV_DIRS)
+
     for path_str in args.paths:
-        path = Path(path_str).resolve()
-        if path.is_file():
-            all_files.add(path)
-        elif path.is_dir():
-            all_files.update(p.resolve() for p in path.rglob("*.py"))
+        input_path = Path(path_str).resolve()
+        if input_path.is_file():
+            if not is_in_venv(input_path):
+                all_files.add(input_path)
+        elif input_path.is_dir():
+            for file_path in input_path.rglob("*.py"):
+                if all(venv not in file_path.parts for venv in VENV_DIRS):
+                    all_files.add(file_path.resolve())
         else:
             print(
                 f"Warning: '{path_str}' is not a valid file or directory and will be ignored.",
