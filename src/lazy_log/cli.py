@@ -10,13 +10,13 @@ files to use percent-format strings instead. It also provides version informatio
 
 Example usage:
     # Check all Python files in the current directory and subdirectories
-    python -m src.cli
+    python -m lazy_log.cli
 
     # Check all Python files in two directories
-    python -m src.cli src/ tests/
+    python -m lazy_log.cli lazy_log/ tests/data/
 
     # Fix issues in all Python files in a directory
-    python -m src.cli mydir --fix
+    python -m lazy_log.cli mydir --fix
 """
 
 import argparse

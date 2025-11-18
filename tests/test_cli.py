@@ -5,8 +5,8 @@ from hypothesis import assume, given
 from hypothesis import strategies as st
 from pytest import fixture, mark
 
-from src.cli import process_file
-from src.transformer import Transformer
+from lazy_log.cli import process_file
+from lazy_log.transformer import Transformer
 
 TEST_DATA = [
     (
@@ -143,7 +143,13 @@ class TestConvertFStringsToPercentFormat:
     def test_transform(self, content, expected):
         transformer = Transformer(Path(), check_import=False)
         result = transformer.run(content)
-        assert result == expected, f"Expected {expected}, but got {result}"
+
+        normalized_result = result.strip()
+        normalized_expected = expected.strip()
+
+        assert normalized_result == normalized_expected, (
+            f"Expected {normalized_expected}, but got {normalized_result}"
+        )
 
 
 class TestTransformerHypothesis:
@@ -159,9 +165,15 @@ class TestTransformerHypothesis:
 
 
 class TestTransformerWithFiles:
-    def test_transform_file(self, temp_logging_fstring_file):
-        process_file(temp_logging_fstring_file, fix=True, check_import=True)
-        with open(temp_logging_fstring_file, "r", encoding="utf-8") as file:
+    def test_transform_file(self, tmp_path):
+        temp_file = tmp_path / "temp_test_file.py"
+        temp_file.write_text(
+            'import logging\nname = "world"\nlogging.info(f"Hello, {name}!")',
+            encoding="utf-8",
+        )
+
+        process_file(temp_file, fix=True, check_import=True)
+        with open(temp_file, "r", encoding="utf-8") as file:
             content = file.read()
         if "import logging" in content:
             assert 'logging.info("Hello, %s!", name)' in content

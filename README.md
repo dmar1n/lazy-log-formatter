@@ -33,25 +33,25 @@ To use it with pre-commit, add the following lines to your `.pre-commit-config.y
 Check all Python files in the current directory and subdirectories:
 
 ```sh
-python -m src.cli
+python -m lazy_log.cli
 ```
 
 Check all Python files in two directories:
 
 ```sh
-python -m src.cli src/ tests/
+python -m lazy_log.cli lazy_log/ tests/
 ```
 
 Check specific files:
 
 ```sh
-python -m src.cli src/cli.py tests/test_cli.py
+python -m lazy_log.cli lazy_log/cli.py tests/data/test.py
 ```
 
 Fix issues in all Python files in a directory:
 
 ```sh
-python -m src.cli mydir --fix
+python -m lazy_log.cli mydir --fix
 ```
 
 If the `--fix` option is used, the hook will convert f-strings in log calls to lazy log calls, as follows:
@@ -96,7 +96,7 @@ class DateTimeLogger:
 ```
 
 ```bash
-python src\cli.py tests\data
+python lazy_log\cli.py tests\data
 ```
 
 The output will be:

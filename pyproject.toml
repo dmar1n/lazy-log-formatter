@@ -30,8 +30,8 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = ">=3.10"
-black = "^25.9.0"
-libcst = "^1.8.5"
+black = "^25.11.0"
+libcst = "^1.8.6"
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^4.3.0"
