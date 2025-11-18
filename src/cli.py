@@ -87,7 +87,8 @@ def main(argv: list[str] | None = None) -> int:
     all_files: set[Path] = set()
     for path_str in args.paths:
         path = Path(path_str).resolve()
-        if path == sys.prefix:  # ignore virtual env
+        venv_path = Path(sys.prefix).resolve()
+        if path.samefile(venv_path):
             continue
         if path.is_file():
             all_files.add(path)
