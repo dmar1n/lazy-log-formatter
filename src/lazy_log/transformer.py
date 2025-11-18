@@ -70,10 +70,10 @@ class Transformer(cst.CSTTransformer):
         super().__init__()
         self.__check_import = check_import
         self.__file_path: Path = file_path
-        self.__issues: list[str] = []
+        self.__issues: set[str] = set()
 
     @property
-    def issues(self) -> list[str]:
+    def issues(self) -> set[str]:
         """Get the list of issues found during the transformation.
 
         Returns:
@@ -159,7 +159,7 @@ class Transformer(cst.CSTTransformer):
             f_string: The f-string code found in the logging call.
         """
         issue_message = f"F-string in logging call at '{self.__file_path}:{getattr(node, 'lineno', '?')}': {f_string}"
-        self.__issues.append(issue_message)
+        self.__issues.add(issue_message)
 
     def run(self, content: str) -> str:
         """Transform the given Python source code by visiting and potentially modifying its CST.

@@ -26,6 +26,7 @@ To use it with pre-commit, add the following lines to your `.pre-commit-config.y
 ## Options
 
 - `--fix`: Automatically fix f-strings used in log calls to lazy log calls.
+- `--exclude [PATTERN ...]`: Exclude files or directories matching these patterns.
 - `PATH [PATH ...]`: One or more directories or files to process. If not specified, defaults to the current directory.
 
 ## Examples
@@ -46,6 +47,12 @@ Check specific files:
 
 ```sh
 python -m lazy_log.cli lazy_log/cli.py tests/data/test.py
+```
+
+Exclude specific files or directories:
+
+```sh
+python -m lazy_log.cli tests/data --exclude "*.pyc" "__pycache__/*" 
 ```
 
 Fix issues in all Python files in a directory:

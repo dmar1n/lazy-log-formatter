@@ -17,9 +17,13 @@ Example usage:
 
     # Fix issues in all Python files in a directory
     python -m lazy_log.cli mydir --fix
+
+    # Exclude specific files or directories
+    python -m lazy_log.cli mydir --exclude "*.pyc" "__pycache__/*"
 """
 
 import argparse
+import fnmatch
 import sys
 from importlib.metadata import version
 from pathlib import Path
@@ -79,6 +83,12 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--fix", help="Fix issues found in file.", action="store_true")
     parser.add_argument(
+        "--exclude",
+        nargs="*",
+        default=[],
+        help="Exclude files or directories matching these patterns.",
+    )
+    parser.add_argument(
         "--version",
         action="version",
         version=f"%(prog)s {version(PROG_NAME)}",
@@ -91,15 +101,22 @@ def main(argv: list[str] | None = None) -> int:
         parts = set(path.parts)
         return any(venv in parts for venv in VENV_DIRS)
 
+    def is_excluded(path: Path) -> bool:
+        return any(fnmatch.fnmatch(str(path), pattern) for pattern in args.exclude)
+
     for path_str in args.paths:
         input_path = Path(path_str).resolve()
         if input_path.is_file():
-            if not is_in_venv(input_path):
-                all_files.add(input_path)
+            resolved_path = input_path.resolve()
+            if not is_in_venv(resolved_path) and not is_excluded(resolved_path):
+                all_files.add(resolved_path)
         elif input_path.is_dir():
             for file_path in input_path.rglob("*.py"):
-                if all(venv not in file_path.parts for venv in VENV_DIRS):
-                    all_files.add(file_path.resolve())
+                resolved_path = file_path.resolve()
+                if all(
+                    venv not in resolved_path.parts for venv in VENV_DIRS
+                ) and not is_excluded(resolved_path):
+                    all_files.add(resolved_path)
         else:
             print(
                 f"Warning: '{path_str}' is not a valid file or directory and will be ignored.",
