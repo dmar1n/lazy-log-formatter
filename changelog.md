@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+## [0.9.0] - 2025-11-18
+
+### Added
+
+- Support for excluding files and directories using glob patterns via the `--exclude` option. 
+  Multiple patterns can be specified by separating them with commas.
+
+### Fixed
+
+- Fixed issue when the formatted file does retain the final newline character. Closes #4
+- Improved handling of files in virtual environments to avoid processing them. Closes #3
+- Minor improvements and code cleanup.
+
 ## [0.8.2] - 2025-11-03
 
 ### Fixed
