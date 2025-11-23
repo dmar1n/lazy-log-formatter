@@ -4,7 +4,7 @@ requires = [ "poetry-core" ]
 
 [tool.poetry]
 name = "lazy-log-formatter"
-version = "0.10.3"
+version = "0.10.4"
 description = "A pre-commit script to make log lines lazier"
 authors = [ "Daniel Marín" ]
 license = "MIT"
@@ -23,10 +23,12 @@ keywords = [
   "W1203",
 ]
 classifiers = [
-  "License :: OSI Approved :: Apache Software License",
+  "License :: OSI Approved :: MIT License",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.10",
-  "Development Status :: 3 - Alpha",
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Natural Language :: English",
   "Topic :: Software Development :: Code Generators",
   "Topic :: Software Development :: Quality Assurance",
   "Topic :: Utilities",
