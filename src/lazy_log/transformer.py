@@ -19,8 +19,11 @@ from pathlib import Path
 import black
 import libcst as cst
 
+from lazy_log.utils import python_fmt_to_printf
+
 logger = logging.getLogger(__name__)
 LOG_CALL_PATTERN = re.compile("^[_]{,2}log", re.IGNORECASE)
+DEFAULT_LOG_METHODS = {"debug", "info", "warning", "error", "critical"}
 
 
 def has_logging_import(content: str) -> bool:
@@ -59,6 +62,8 @@ class Transformer(cst.CSTTransformer):
         __issues: List of issues found during transformation.
     """
 
+    METADATA_DEPENDENCIES = (cst.metadata.PositionProvider,)
+
     def __init__(self, file_path: Path, check_import: bool = False) -> None:
         """Initialize the Transformer.
 
@@ -81,86 +86,6 @@ class Transformer(cst.CSTTransformer):
         """
         return self.__issues
 
-    def leave_Call(self, original_node: cst.Call, updated_node: cst.Call) -> cst.Call:
-        """Transform logging calls using f-strings into printf-style formatting.
-
-        Args:
-            original_node: The original CST Call node.
-            updated_node: The updated CST Call node.
-
-        Returns:
-            The potentially transformed CST Call node.
-        """
-        func = updated_node.func
-        if not (
-            isinstance(func, cst.Attribute)
-            and (
-                (
-                    isinstance(func.value, cst.Name)
-                    and LOG_CALL_PATTERN.match(func.value.value)
-                )
-                or (
-                    isinstance(func.value, cst.Attribute)
-                    and LOG_CALL_PATTERN.match(func.value.attr.value)
-                )
-            )
-            and func.attr.value in {"debug", "info", "warning", "error", "critical"}
-            and updated_node.args
-            and isinstance(updated_node.args[0].value, cst.FormattedString)
-        ):
-            return updated_node
-
-        fstring_node = updated_node.args[0].value
-        try:
-            fstring_code = cst.Module([]).code_for_node(fstring_node)
-        except (cst.CSTException, ValueError):
-            fstring_code = "<f-string>"
-        self.__register_issue(original_node, fstring_code)
-        parts = []
-        values = []
-        for part in fstring_node.parts:
-            if isinstance(part, cst.FormattedStringText):
-                text = part.value.replace("%", "%%")
-                text = text.replace("{{", "{").replace("}}", "}")
-                parts.append(text)
-            elif isinstance(part, cst.FormattedStringExpression):
-                fmt = ""
-                if part.equal:
-                    expr_code = cst.Module([]).code_for_node(part.expression)
-                    parts.append(f"{expr_code}=%s")
-                elif part.format_spec:
-                    fmt = (
-                        "".join(getattr(node, "value", "") for node in part.format_spec)
-                        if isinstance(part.format_spec, tuple)
-                        else getattr(part.format_spec, "value", "")
-                    )
-                    fmt = fmt.replace("{", "").replace("}", "")
-
-                    if fmt == ",":
-                        parts.append("%s")
-                    else:
-                        parts.append(f"%{fmt}")
-                else:
-                    parts.append("%s")
-                values.append(part.expression)
-        format_str = "".join(parts)
-        new_args = [
-            cst.Arg(value=cst.SimpleString(f'"{format_str}"')),
-            *(cst.Arg(value=val) for val in values),
-            *updated_node.args[1:],
-        ]
-        return updated_node.with_changes(args=new_args)
-
-    def __register_issue(self, node: cst.CSTNode, f_string: str) -> None:
-        """Register an issue found during transformation.
-
-        Args:
-            node: The CST node where the issue was found.
-            f_string: The f-string code found in the logging call.
-        """
-        issue_message = f"F-string in logging call at '{self.__file_path}:{getattr(node, 'lineno', '?')}': {f_string}"
-        self.__issues.add(issue_message)
-
     def run(self, content: str) -> str:
         """Transform the given Python source code by visiting and potentially modifying its CST.
 
@@ -177,24 +102,146 @@ class Transformer(cst.CSTTransformer):
             return content
         try:
             module = cst.parse_module(content)
+            wrapper = cst.MetadataWrapper(module)
+            tree = wrapper.visit(self)
+            result = tree.code
+            return self._format_code(result)
         except cst.ParserSyntaxError as e:
             logger.debug("Invalid Python syntax: %s", e)
             return content
-        wrapper = cst.MetadataWrapper(module)
-        tree = wrapper.visit(self)
-        result = tree.code
-        logger.debug("Transformed code:\n%s", result)
-        return self.__format(result)
+        except TypeError as e:
+            logger.debug("TypeError during transformation: %s", e)
+            return content
 
-    def __format(self, content: str) -> str:
-        """Format the given Python source code using Black and ensure a final newline."""
+    def leave_Call(self, original_node: cst.Call, updated_node: cst.Call) -> cst.Call:
+        """Transform logging calls using f-strings into printf-style formatting.
+
+        Args:
+            original_node: The original CST Call node.
+            updated_node: The updated CST Call node.
+
+        Returns:
+            The potentially transformed CST Call node.
+        """
+        func = updated_node.func
+
+        def _is_logging_call(func: cst.BaseExpression) -> bool:
+            if not isinstance(func, cst.Attribute):
+                return False
+            if isinstance(func.value, cst.Name):
+                if not LOG_CALL_PATTERN.match(func.value.value):
+                    return False
+            elif isinstance(func.value, cst.Attribute):
+                if not LOG_CALL_PATTERN.match(func.value.attr.value):
+                    return False
+            else:
+                return False
+            return func.attr.value in DEFAULT_LOG_METHODS
+
+        def _is_fstring(node: cst.CSTNode) -> bool:
+            return node.args and isinstance(node.args[0].value, cst.FormattedString)
+
+        if not _is_logging_call(func) or not _is_fstring(updated_node):
+            return updated_node
+
+        return self._transform_fstring_to_printf(original_node, updated_node)
+
+    def _get_code_for_node(self, node: cst.CSTNode) -> str:
+        """Get the source code representation for a given CST node.
+
+        Args:
+            node: The CST node to get the code for.
+
+        Returns:
+            The source code as a string.
+        """
+        try:
+            return cst.Module([]).code_for_node(node)
+        except (cst.CSTException, ValueError):
+            return "<f-string>"
+
+    def _transform_fstring_to_printf(
+        self,
+        original_node: cst.Call,
+        updated_node: cst.Call,
+    ) -> cst.Call:
+        """Transform a logging call with an f-string into printf-style formatting.
+
+        Args:
+            original_node: The original CST Call node.
+            updated_node: The updated CST Call node.
+
+        Returns:
+            The transformed CST Call node.
+        """
+        fstring_node = updated_node.args[0].value
+        fstring_code = self._get_code_for_node(fstring_node)
+        self._register_issue(original_node, fstring_code)
+
+        parts, values = [], []
+
+        for part in fstring_node.parts:
+            if isinstance(part, cst.FormattedStringText):
+                text = part.value.replace("%", "%%")
+                text = text.replace("{{", "{").replace("}}", "}")
+                parts.append(text)
+            elif isinstance(part, cst.FormattedStringExpression):
+                if part.equal:
+                    expr_code = self._get_code_for_node(part.expression)
+                    parts.append(f"{expr_code}=%s")
+                elif part.format_spec:
+                    fmt = (
+                        "".join(getattr(node, "value", "") for node in part.format_spec)
+                        if isinstance(part.format_spec, tuple)
+                        else getattr(part.format_spec, "value", "")
+                    )
+                    fmt = fmt.replace("{", "").replace("}", "")
+                    parts.append(python_fmt_to_printf(fmt))
+                else:
+                    parts.append("%s")
+                values.append(part.expression)
+
+        format_str = "".join(parts)
+        new_args = [
+            cst.Arg(value=cst.SimpleString(f'"{format_str}"')),
+            *(cst.Arg(value=val) for val in values),
+            *updated_node.args[1:],
+        ]
+        return updated_node.with_changes(args=new_args)
+
+    def _register_issue(self, node: cst.CSTNode, f_string: str) -> None:
+        """Register an issue found during transformation.
+
+        Args:
+            node: The CST node where the issue was found.
+            f_string: The f-string code found in the logging call.
+        """
+        try:
+            position = self.get_metadata(cst.metadata.PositionProvider, node)
+            lineno = position.start.line
+        except (KeyError, AttributeError, cst.metadata.MetadataException):
+            lineno = "?"
+        issue_message = (
+            f"F-string in logging call at '{self.__file_path}:{lineno}': {f_string}"
+        )
+        self.__issues.add(issue_message)
+
+    def _format_code(self, content: str) -> str:
+        """Format the given Python source code using Black and ensure a final newline.
+
+        Args:
+            content: The Python source code to format.
+
+        Returns:
+            The formatted Python source code as a string.
+        """
         try:
             formatted = black.format_str(
                 content,
                 mode=black.FileMode(line_length=120),
             ).strip()
         except black.InvalidInput as e:
-            logger.debug("Error formatting code with Black: %s", e)
+            logger.warning("Error formatting code with Black: %s", e)
             formatted = content.strip()
         if not formatted.endswith("\n"):
             formatted += "\n"

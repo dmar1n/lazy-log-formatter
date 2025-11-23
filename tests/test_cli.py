@@ -111,6 +111,10 @@ TEST_DATA = [
         'logger.info(f"Reading {len(paths):,} files for {name1} - {name2} - {service}...")',
         'logger.info("Reading %s files for %s - %s - %s...", len(paths), name1, name2, service)',
     ),
+    (
+        'logger.info(f"Value with sign: {value:+d}")',
+        'logger.info("Value with sign: %+d", value)',
+    ),
 ]
 
 STANDARD_LOGGING_IMPORT = (
@@ -138,6 +142,21 @@ def temp_logging_fstring_file(request):
     temp_file_path.unlink(missing_ok=True)
 
 
+class TestDataForSanity:
+    @mark.parametrize("content, expected", TEST_DATA)
+    def test_sanity(self, content, expected):
+        assert isinstance(content, str)
+        assert isinstance(expected, str)
+
+    def test_valid_py_syntax(self):
+        for content, expected in TEST_DATA:
+            try:
+                compile(content, "<string>", "exec")
+                compile(expected, "<string>", "exec")
+            except SyntaxError as e:
+                assert False, f"Syntax error in test data: {e}"
+
+
 class TestConvertFStringsToPercentFormat:
     @mark.parametrize("content, expected", TEST_DATA)
     def test_transform(self, content, expected):
@@ -160,7 +179,7 @@ class TestTransformerHypothesis:
         transformer = Transformer(Path(), check_import=False)
         try:
             transformer.run(text)
-        except (ValueError, SyntaxError) as e:
+        except (ValueError, SyntaxError, TypeError) as e:
             assert False, f"Transformer crashed on input: {text} with error: {e}"
 
 
