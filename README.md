@@ -20,6 +20,7 @@ logging.warning('%s before you %s', 'Look', 'leap!')
 ```
 
 This approach:
+
 - avoids unnecessary string formatting when a log message is not emitted,
 - is compatible with Python’s [logging design](https://docs.python.org/3/howto/logging.html#optimization) and [documentation](https://docs.python.org/3/howto/logging.html#logging-variable-data),
 - prevents Pylint’s [W1203](https://pylint.readthedocs.io/en/stable/user_guide/messages/warning/logging-fstring-interpolation.html): logging-fstring-interpolation warning,
@@ -39,13 +40,13 @@ Install from PyPI:
 pip install lazy-log-formatter
 ```
 
-### Pre-commit Integration
+### Pre-commit integration
 
 Add the following to your `.pre-commit-config.yaml`:
 
 ```yaml
 - repo: https://github.com/dmar1n/lazy-log-formatter
-  rev: 0.10.0
+  rev: 0.10.1
   hooks:
     - id: lazy-log-formatter
       args: ['--fix']
@@ -145,15 +146,21 @@ class DateTimeLogger:
         return now
 ```
 
-After running the formatter, the output will be:
+After running the formatter without `--fix`, the output will be:
 
 ```text
-F-string in logging call at ...\tests\data\test.py:8: f'Current datetime: {now}'
-F-string in logging call at ...\tests\data\test.py:18: f'Current datetime: {now}'
+F-strings found in '...\tests\data\test.py':
+ - F-string in logging call at ...\tests\data\test.py:8: f'Current datetime: {now}'
+ - F-string in logging call at ...\tests\data\test.py:18: f'Current datetime: {now}'
+```
+
+After running the formatter with `--fix`, the output will be:
+
+```text
 F-strings found and fixed in '...\tests\data\test.py'.
 ```
 
-And the code will be transformed to:
+The transformed code will be:
 
 ```python
 import logging
@@ -178,6 +185,16 @@ class DateTimeLogger:
 
 ### Notes
 
+#### Code formatting with Black
+
+When transforming code, the tool uses [Black](https://black.readthedocs.io/en/stable/) to reformat the modified files.
+If your project already uses Black, the changes produced by this tool will be consistent with Black’s formatting style.
+
+#### Detection of log calls
+
+The tool includes logic to detect logging calls based on the assumption that your logger instances follow common naming conventions (e.g., `logger.info(...)`, `log.info(...)`).
+If a logger variable does not contain the substring "log" in its name, the tool will ignore it.
+
 #### Other logging libraries
 
 Only works with the native Python `logging` module. Other libraries, such as `loguru`, do not support lazy calls.
@@ -187,12 +204,3 @@ For `loguru`, see [Lazy evaluation of expensive functions](https://loguru.readth
 ```python
 logger.opt(lazy=True).debug("If sink level <= DEBUG: {x}", x=lambda: expensive_function(2**64))
 ```
-
-#### Code formatting with Black
-
-When transforming code, the tool uses [Black](https://black.readthedocs.io/en/stable/) to reformat the modified files. 
-If you use Black in your project, the changes made by this tool will be consistent with Black's formatting style.
-
-#### Detection of log calls
-
-The tool implements logic to detect calls to a logger in the code assuming your log calls use a logger that is named accordingly (e.g.: `logger.info(...)`, `log.info(...)`). If the logger instance variable is named without "log", it will skip it.

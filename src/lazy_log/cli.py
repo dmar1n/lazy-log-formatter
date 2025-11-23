@@ -127,6 +127,10 @@ def main(argv: list[str] | None = None) -> int:
     filenames = [str(f) for f in sorted(all_files)]
     logger.debug("Files to be processed: %s", len(filenames))
     results = sum(process_file(filename, fix=args.fix) == 1 for filename in filenames)
+    if filenames and results == 0:
+        print(
+            f"🚀 Scanned {len(filenames)} files, no f-strings in logging calls found.",
+        )
     return 1 if results else 0
 
 

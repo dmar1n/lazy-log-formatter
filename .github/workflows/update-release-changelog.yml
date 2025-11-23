@@ -1,0 +1,34 @@
+name: Update Release Changelog
+
+on:
+    release:
+        types: [published]
+
+jobs:
+    update-release:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Read changelog
+              id: changelog
+              run: |
+                  echo "changelog<<EOF" >> $GITHUB_OUTPUT
+                  cat changelog.md >> $GITHUB_OUTPUT
+                  echo "EOF" >> $GITHUB_OUTPUT
+
+            - name: Update release description
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const changelog = process.env.changelog;
+                      const release_id = context.payload.release.id;
+                      await github.rest.repos.updateRelease({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        release_id,
+                        body: changelog
+                      });
+              env:
+                  changelog: ${{ steps.changelog.outputs.changelog }}
