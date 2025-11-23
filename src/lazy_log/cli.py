@@ -24,6 +24,7 @@ Example usage:
 
 import argparse
 import fnmatch
+import logging
 import sys
 from importlib.metadata import version
 from pathlib import Path
@@ -32,6 +33,8 @@ from lazy_log.transformer import Transformer
 
 PROG_NAME = "lazy-log-formatter"
 VENV_DIRS = {".venv", ".env"}
+
+logger = logging.getLogger(__name__)
 
 
 def process_file(file_path: Path | str, fix: bool, check_import: bool = False) -> int:
@@ -77,7 +80,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog=PROG_NAME)
     parser.add_argument(
         "paths",
-        nargs="+",
+        nargs="*",
         default=["."],
         help="One or more directories or files to process. Defaults to current directory if not specified.",
     )
@@ -105,17 +108,15 @@ def main(argv: list[str] | None = None) -> int:
         return any(fnmatch.fnmatch(str(path), pattern) for pattern in args.exclude)
 
     for path_str in args.paths:
-        input_path = Path(path_str).resolve()
+        input_path = Path(path_str)
         if input_path.is_file():
             resolved_path = input_path.resolve()
             if not is_in_venv(resolved_path) and not is_excluded(resolved_path):
                 all_files.add(resolved_path)
         elif input_path.is_dir():
-            for file_path in input_path.rglob("*.py"):
+            for file_path in input_path.glob("**/*.py"):
                 resolved_path = file_path.resolve()
-                if all(
-                    venv not in resolved_path.parts for venv in VENV_DIRS
-                ) and not is_excluded(resolved_path):
+                if not is_in_venv(resolved_path) and not is_excluded(resolved_path):
                     all_files.add(resolved_path)
         else:
             print(
@@ -124,6 +125,7 @@ def main(argv: list[str] | None = None) -> int:
             )
 
     filenames = [str(f) for f in sorted(all_files)]
+    logger.debug("Files to be processed: %s", len(filenames))
     results = sum(process_file(filename, fix=args.fix) == 1 for filename in filenames)
     return 1 if results else 0
 
