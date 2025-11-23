@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.3] - 2025-11-23
+
+### Changed
+
+- Updated `README.md`.
+- Changed license to MIT.
+- Updated `pyproject.toml` metadata.
+
 ## [0.10.2] - 2025-11-23
 
 ### Changed
@@ -15,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Fixed README.md to improve clarity on code formatting and log call detection.
+- Fixed `README.md` to improve clarity on code formatting and log call detection.
 
 ### Added
 
@@ -30,7 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Improved README.md with more examples and explanations.
+- Improved `README.md` with more examples and explanations.
 
 ## [0.9.0] - 2025-11-18
 

@@ -1,14 +1,17 @@
 # Lazy log formatter
 
 ![PyPI - Version](https://img.shields.io/pypi/v/lazy-log-formatter) 
-![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/dmar1n/lazy-log-formatter/.github%2Fworkflows%2Frelease.yaml)
-![GitHub License](https://img.shields.io/github/license/dmar1n/lazy-log-formatter)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/lazy-log-formatter)
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/lazy-log-formatter)
+![License](https://img.shields.io/github/license/dmar1n/lazy-log-formatter)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/dmar1n/lazy-log-formatter/.github%2Fworkflows%2Frelease.yaml)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://pre-commit.com/)
 
 A tool that automatically converts f-strings in Python logging calls into lazy logging calls 
 for consistency with Python documentation, improved performance and linting compliance.
+
+See [PyPI page](https://pypi.org/project/lazy-log-formatter/) for more details.
+See [Changelog](changelog.md) for release notes.
 
 Example:
 
@@ -57,13 +60,27 @@ Install from PyPI:
 pip install lazy-log-formatter
 ```
 
+## Usage
+
+You can either run the tool as a Python module, use it as a pre-commit hook, run the entry point script:
+
+```sh
+python -m lazy_log.cli [OPTIONS] [PATH...]
+```
+
+or
+
+```sh
+lazy-log-formatter [OPTIONS] [PATH...]
+```
+
 ### Pre-commit integration
 
 Add the following to your `.pre-commit-config.yaml`:
 
 ```yaml
 - repo: https://github.com/dmar1n/lazy-log-formatter
-  rev: 0.10.2
+  rev: 0.10.3
   hooks:
     - id: lazy-log-formatter
       args: ['--fix']

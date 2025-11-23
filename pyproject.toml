@@ -1,47 +1,47 @@
+[build-system]
+build-backend = "poetry.core.masonry.api"
+requires = [ "poetry-core" ]
+
 [tool.poetry]
 name = "lazy-log-formatter"
-version = "0.10.2"
-description = "A pre-commit script to make log lines lazzier"
-authors = ["Daniel Marín"]
-license = "Apache-2.0"
+version = "0.10.3"
+description = "A pre-commit script to make log lines lazier"
+authors = [ "Daniel Marín" ]
+license = "MIT"
 readme = "README.md"
-packages = [{ include = "lazy_log", from = "src" }]
+packages = [ { include = "lazy_log", from = "src" } ]
 homepage = "https://github.com/dmar1n/lazy-log-formatter"
 repository = "https://github.com/dmar1n/lazy-log-formatter"
 keywords = [
-    "code-quality",
-    "f-strings",
-    "lazy logging",
-    "linting",
-    "logging",
-    "pre-commit",
-    "pylint",
-    "W1203",
+  "code-quality",
+  "f-strings",
+  "lazy logging",
+  "linting",
+  "logging",
+  "pre-commit",
+  "pylint",
+  "W1203",
 ]
 classifiers = [
-    "License :: OSI Approved :: Apache Software License",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
-    "Development Status :: 3 - Alpha",
-    "Topic :: Software Development :: Code Generators",
-    "Topic :: Software Development :: Quality Assurance",
-    "Topic :: Utilities",
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Development Status :: 3 - Alpha",
+  "Topic :: Software Development :: Code Generators",
+  "Topic :: Software Development :: Quality Assurance",
+  "Topic :: Utilities",
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.10"
 black = "^25.11.0"
 libcst = "^1.8.6"
+python = ">=3.10"
 
 [tool.poetry.group.dev.dependencies]
+hypothesis = "^6.135.26"
 pre-commit = "^4.5.0"
 pytest = "^9.0.1"
 pytest-cov = "^7.0.0"
-hypothesis = "^6.135.26"
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
-lazylogformat = "lazy_log.cli:main"
+lazy-log-formatter = "lazy_log.cli:main"
