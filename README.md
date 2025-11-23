@@ -7,8 +7,20 @@
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/lazy-log-formatter)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://pre-commit.com/)
 
-A tool that automatically converts f-strings in Python logging calls into lazy logging calls (`logger.info("x %s", var)`) 
+A tool that automatically converts f-strings in Python logging calls into lazy logging calls 
 for consistency with Python documentation, improved performance and linting compliance.
+
+Example:
+
+```python
+# Before (f-string in log call; not recommended)
+logger.info(f"On {datetime.now()} temperature in {city} is {temp:.2f}°C.")
+
+# After lazy-log-formatter
+logger.info("On %s temperature in %s is %.2f°C.", datetime.now(), city, temp)
+
+# Prints: On 2024-06-01 12:00:00 temperature in Madrid is 21.50°C.
+```
 
 ## Why this tool?
 
@@ -21,10 +33,15 @@ logging.warning('%s before you %s', 'Look', 'leap!')
 
 This approach:
 
-- avoids unnecessary string formatting when a log message is not emitted,
-- is compatible with Python’s [logging design](https://docs.python.org/3/howto/logging.html#optimization) and [documentation](https://docs.python.org/3/howto/logging.html#logging-variable-data),
-- prevents Pylint’s [W1203](https://pylint.readthedocs.io/en/stable/user_guide/messages/warning/logging-fstring-interpolation.html): logging-fstring-interpolation warning,
-- avoids performance overhead from evaluating f-strings when logging is disabled for a certain level.
+- ensures string formatting and interpolation are only performed [if the message is actually emitted](https://stackoverflow.com/questions/34619790/pylint-message-logging-format-interpolation) (e.g. based on the logging level),
+- is consistent with Python’s [logging design](https://docs.python.org/3/howto/logging.html#optimization) and [documentation](https://docs.python.org/3/howto/logging.html#logging-variable-data),
+- prevents linting alerts (e.g. Pylint’s [W1203](https://pylint.readthedocs.io/en/stable/user_guide/messages/warning/logging-fstring-interpolation.html): `Use %s formatting in logging functions`).
+
+### References
+
+- [Logging should be lazy](https://medium.com/flowe-ita/logging-should-be-lazy-bc6ac9816906)
+- [logging-format-interpolation](https://stackoverflow.com/questions/34619790/pylint-message-logging-format-interpolation)
+- [Why it matters how you log in Python](https://medium.com/swlh/why-it-matters-how-you-log-in-python-1a1085851205)
 
 ### Features
 
@@ -183,19 +200,19 @@ class DateTimeLogger:
         return now
 ```
 
-### Notes
+## Notes
 
-#### Code formatting with Black
+### Code formatting with Black
 
 When transforming code, the tool uses [Black](https://black.readthedocs.io/en/stable/) to reformat the modified files.
 If your project already uses Black, the changes produced by this tool will be consistent with Black’s formatting style.
 
-#### Detection of log calls
+### Detection of log calls
 
 The tool includes logic to detect logging calls based on the assumption that your logger instances follow common naming conventions (e.g., `logger.info(...)`, `log.info(...)`).
 If a logger variable does not contain the substring "log" in its name, the tool will ignore it.
 
-#### Other logging libraries
+### Other logging libraries
 
 Only works with the native Python `logging` module. Other libraries, such as `loguru`, do not support lazy calls.
 

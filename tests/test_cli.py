@@ -115,6 +115,10 @@ TEST_DATA = [
         'logger.info(f"Value with sign: {value:+d}")',
         'logger.info("Value with sign: %+d", value)',
     ),
+    (
+        'logger.info(f"On {datetime.now()} temperature in {city} is {temp:.2f}°C.")',
+        'logger.info("On %s temperature in %s is %.2f°C.", datetime.now(), city, temp)',
+    ),
 ]
 
 STANDARD_LOGGING_IMPORT = (
