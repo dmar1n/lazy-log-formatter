@@ -65,13 +65,13 @@ pip install lazy-log-formatter
 You can either run the tool as a Python module, use it as a pre-commit hook, run the entry point script:
 
 ```sh
-python -m lazy_log.cli [OPTIONS] [PATH...]
+lazy-log-formatter [OPTIONS] [PATH...]
 ```
 
 or
 
 ```sh
-lazy-log-formatter [OPTIONS] [PATH...]
+python -m lazy_log.cli [OPTIONS] [PATH...]
 ```
 
 ### Pre-commit integration
@@ -80,7 +80,7 @@ Add the following to your `.pre-commit-config.yaml`:
 
 ```yaml
 - repo: https://github.com/dmar1n/lazy-log-formatter
-  rev: 0.10.6
+  rev: 0.10.7
   hooks:
     - id: lazy-log-formatter
       args: ['--fix']
@@ -102,37 +102,37 @@ You can run the tool from the command line using the following options:
 Check all Python files in the current directory and subdirectories:
 
 ```sh
-python -m lazy_log.cli .
+lazy-log-formatter .
 ```
 
 Fix all Python files in the current directory and subdirectories:
 
 ```sh
-python -m lazy_log.cli . --fix
+lazy-log-formatter . --fix
 ```
 
 Check all Python files in two directories:
 
 ```sh
-python -m lazy_log.cli lazy_log/ tests/
+lazy-log-formatter lazy_log/ tests/
 ```
 
 Check specific files:
 
 ```sh
-python -m lazy_log.cli lazy_log/cli.py tests/data/test.py
+lazy-log-formatter lazy_log/cli.py tests/data/test.py
 ```
 
 Exclude specific files or directories:
 
 ```sh
-python -m lazy_log.cli tests/data --exclude "*.pyc" "__pycache__/*" 
+lazy-log-formatter tests/data --exclude "*.pyc" "__pycache__/*" 
 ```
 
 Fix issues in all Python files in a directory:
 
 ```sh
-python -m lazy_log.cli mydir --fix
+lazy-log-formatter mydir --fix
 ```
 
 ## Example transformations
@@ -163,20 +163,19 @@ logger.info('Hello %s %s', name, surname)
 import logging
 from datetime import datetime
 
+logger = logging.getLogger(__name__)
+
 
 def log_and_return_datetime():
     now = datetime.now()
-    logging.info(f"Current datetime: {now}")
+    logger.info(f"Current datetime: {now}")
     return now
 
 
 class DateTimeLogger:
-    def __init__(self):
-        self._logger = logging.getLogger(self.__class__.__name__)
-
     def log_datetime(self):
         now = datetime.now()
-        self._logger.info(f"Current datetime: {now}")
+        logger.info(f"Current datetime: {now}")
         return now
 ```
 
@@ -200,20 +199,19 @@ The transformed code will be:
 import logging
 from datetime import datetime
 
+logger = logging.getLogger(__name__)
+
 
 def log_and_return_datetime():
     now = datetime.now()
-    logging.info("Current datetime: %s", now)
+    logger.info("Current datetime: %s", now)
     return now
 
 
 class DateTimeLogger:
-    def __init__(self):
-        self._logger = logging.getLogger(self.__class__.__name__)
-
     def log_datetime(self):
         now = datetime.now()
-        self._logger.info("Current datetime: %s", now)
+        logger.info("Current datetime: %s", now)
         return now
 ```
 

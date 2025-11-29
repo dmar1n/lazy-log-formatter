@@ -4,7 +4,7 @@ requires = [ "poetry-core" ]
 
 [tool.poetry]
 name = "lazy-log-formatter"
-version = "0.10.6"
+version = "0.10.7"
 description = "A pre-commit script to make log lines lazier"
 authors = [ "Daniel Marín" ]
 license = "MIT"
