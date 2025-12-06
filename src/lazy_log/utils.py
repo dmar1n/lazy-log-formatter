@@ -1,6 +1,10 @@
 """Utility functions for the lazy_log package."""
 
 import re
+import sys
+from importlib.metadata import PackageNotFoundError, version
+
+from lazy_log.constants import PROG_NAME
 
 FLOAT_FMT_PATTERN = re.compile(r"^([+-]?)(\d+)?(\.\d+)?f$")
 INT_FMT_PATTERN = re.compile(r"^([+-]?)(\d+)?d$")
@@ -40,3 +44,33 @@ def python_fmt_to_printf(fmt: str) -> str:
         result = f"%{fmt[-1]}"
 
     return result
+
+
+def get_version() -> str:
+    """Return installed package version, falling back gracefully when not installed."""
+    try:
+        return version(PROG_NAME)
+    except PackageNotFoundError:
+        return "unknown"
+
+
+def print_with_fallback(message: str) -> None:
+    """Print text, degrading safely when the console cannot encode the characters."""
+    try:
+        print(message)
+    except UnicodeEncodeError:
+        encoding = sys.stdout.encoding or "utf-8"
+        safe_bytes = message.encode(encoding, errors="backslashreplace")
+        sys.stdout.buffer.write(safe_bytes + b"\n")
+
+
+def prepare_exclude_patterns(patterns: list[str]) -> list[str]:
+    """Normalize user-provided exclude patterns for cross-platform matching."""
+    prepared = []
+    for pattern in patterns:
+        normalized = pattern.replace("\\", "/")
+        if normalized.startswith(("**/", "/")) or ":" in normalized:
+            prepared.append(normalized)
+        else:
+            prepared.append(f"**/{normalized}")
+    return prepared

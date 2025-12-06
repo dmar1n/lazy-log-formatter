@@ -4,7 +4,7 @@ requires = [ "poetry-core" ]
 
 [tool.poetry]
 name = "lazy-log-formatter"
-version = "0.10.7"
+version = "0.11.0"
 description = "A pre-commit script to make log lines lazier"
 authors = [ "Daniel Marín" ]
 license = "MIT"
@@ -40,7 +40,7 @@ libcst = "^1.8.6"
 python = ">=3.10"
 
 [tool.poetry.group.dev.dependencies]
-hypothesis = "^6.135.26"
+hypothesis = "^6.148.7"
 pre-commit = "^4.5.0"
 pytest = "^9.0.1"
 pytest-cov = "^7.0.0"

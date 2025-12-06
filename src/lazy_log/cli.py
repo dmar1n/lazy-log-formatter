@@ -23,16 +23,14 @@ Example usage:
 """
 
 import argparse
-import fnmatch
+import contextlib
 import logging
 import sys
-from importlib.metadata import version
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
+from lazy_log.constants import PROG_NAME, VENV_DIRS
 from lazy_log.transformer import Transformer
-
-PROG_NAME = "lazy-log-formatter"
-VENV_DIRS = {".venv", ".env"}
+from lazy_log.utils import get_version, prepare_exclude_patterns, print_with_fallback
 
 logger = logging.getLogger(__name__)
 
@@ -94,29 +92,42 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--version",
         action="version",
-        version=f"%(prog)s {version(PROG_NAME)}",
+        version=f"%(prog)s {get_version()}",
     )
     args = parser.parse_args(argv)
 
     all_files: set[Path] = set()
+    exclude_patterns = prepare_exclude_patterns(args.exclude)
 
     def is_in_venv(path: Path) -> bool:
         parts = set(path.parts)
         return any(venv in parts for venv in VENV_DIRS)
 
-    def is_excluded(path: Path) -> bool:
-        return any(fnmatch.fnmatch(str(path), pattern) for pattern in args.exclude)
+    def is_excluded(path: Path, root: Path) -> bool:
+        candidates = [path.as_posix()]
+        with contextlib.suppress(ValueError):
+            candidates.append(path.relative_to(root).as_posix())
+        return any(
+            PurePosixPath(candidate).match(pattern)
+            for candidate in candidates
+            for pattern in exclude_patterns
+        )
 
     for path_str in args.paths:
         input_path = Path(path_str)
         if input_path.is_file():
             resolved_path = input_path.resolve()
-            if not is_in_venv(resolved_path) and not is_excluded(resolved_path):
+            root = resolved_path.parent
+            if not is_in_venv(resolved_path) and not is_excluded(resolved_path, root):
                 all_files.add(resolved_path)
         elif input_path.is_dir():
-            for file_path in input_path.glob("**/*.py"):
+            root = input_path.resolve()
+            for file_path in root.glob("**/*.py"):
                 resolved_path = file_path.resolve()
-                if not is_in_venv(resolved_path) and not is_excluded(resolved_path):
+                if not is_in_venv(resolved_path) and not is_excluded(
+                    resolved_path,
+                    root,
+                ):
                     all_files.add(resolved_path)
         else:
             print(
@@ -128,9 +139,10 @@ def main(argv: list[str] | None = None) -> int:
     logger.debug("Files to be processed: %s", len(filenames))
     results = sum(process_file(filename, fix=args.fix) == 1 for filename in filenames)
     if filenames and results == 0:
-        print(
-            f"🚀 Scanned {len(filenames)} files, no f-strings in logging calls found.",
+        message = (
+            f"🚀 Scanned {len(filenames)} files, no f-strings in logging calls found."
         )
+        print_with_fallback(message)
     return 1 if results else 0
 
 

@@ -21,9 +21,10 @@ import libcst as cst
 
 from lazy_log.utils import python_fmt_to_printf
 
-logger = logging.getLogger(__name__)
 LOG_CALL_PATTERN = re.compile("^[_]{,2}log", re.IGNORECASE)
 DEFAULT_LOG_METHODS = {"debug", "info", "warning", "error", "critical"}
+
+logger = logging.getLogger(__name__)
 
 
 def has_logging_import(content: str) -> bool:
@@ -55,6 +56,8 @@ class Transformer(cst.CSTTransformer):
     This class extends cst.CSTTransformer to traverse the CST and modify logging calls that use f-strings.
     It specifically targets calls to logging methods (debug, info, warning, error, critical) on variables
     whose names start with 'log', and transforms f-string arguments into format strings with placeholders.
+
+    METADATA_DEPENDENCIES is a tuple that specifies the metadata providers required by this transformer.
 
     Attributes:
         __check_import: If `True`, the transformer will check if the logging module is imported in the code.
@@ -139,7 +142,9 @@ class Transformer(cst.CSTTransformer):
             return func.attr.value in DEFAULT_LOG_METHODS
 
         def _is_fstring(node: cst.CSTNode) -> bool:
-            return node.args and isinstance(node.args[0].value, cst.FormattedString)
+            if not node.args:
+                return False
+            return self._contains_formatted_expression(node.args[0].value)
 
         if not _is_logging_call(func) or not _is_fstring(updated_node):
             return updated_node
@@ -174,13 +179,12 @@ class Transformer(cst.CSTTransformer):
         Returns:
             The transformed CST Call node.
         """
-        fstring_node = updated_node.args[0].value
-        fstring_code = self._get_code_for_node(fstring_node)
-        self._register_issue(original_node, fstring_code)
+        fstring_expr = updated_node.args[0].value
+        fstring_code = self._get_code_for_node(fstring_expr)
 
         parts, values = [], []
 
-        for part in fstring_node.parts:
+        for part in self._gather_formatted_parts(fstring_expr):
             if isinstance(part, cst.FormattedStringText):
                 text = part.value.replace("%", "%%")
                 text = text.replace("{{", "{").replace("}}", "}")
@@ -190,11 +194,9 @@ class Transformer(cst.CSTTransformer):
                     expr_code = self._get_code_for_node(part.expression)
                     parts.append(f"{expr_code}=%s")
                 elif part.format_spec:
-                    fmt = (
-                        "".join(getattr(node, "value", "") for node in part.format_spec)
-                        if isinstance(part.format_spec, tuple)
-                        else getattr(part.format_spec, "value", "")
-                    )
+                    fmt = self._flatten_format_spec(part.format_spec)
+                    if fmt is None:
+                        return updated_node
                     fmt = fmt.replace("{", "").replace("}", "")
                     parts.append(python_fmt_to_printf(fmt))
                 else:
@@ -202,8 +204,9 @@ class Transformer(cst.CSTTransformer):
                 values.append(part.expression)
 
         format_str = "".join(parts)
+        self._register_issue(original_node, fstring_code)
         new_args = [
-            cst.Arg(value=cst.SimpleString(f'"{format_str}"')),
+            cst.Arg(value=cst.SimpleString(repr(format_str))),
             *(cst.Arg(value=val) for val in values),
             *updated_node.args[1:],
         ]
@@ -225,6 +228,48 @@ class Transformer(cst.CSTTransformer):
             f"F-string in logging call at '{self.__file_path}:{lineno}': {f_string}"
         )
         self.__issues.add(issue_message)
+
+    def _gather_formatted_parts(self, expr: cst.BaseExpression) -> list[cst.CSTNode]:
+        """Flatten concatenated strings and f-strings into a single list of formatted parts."""
+        if isinstance(expr, cst.FormattedString):
+            return list(expr.parts)
+        if isinstance(expr, cst.SimpleString):
+            try:
+                text = ast.literal_eval(expr.value)
+            except (ValueError, SyntaxError):
+                text = expr.value.strip("\"'")
+            return [cst.FormattedStringText(text)]
+        if isinstance(expr, cst.BinaryOperation) and isinstance(expr.operator, cst.Add):
+            left_parts = self._gather_formatted_parts(expr.left)
+            right_parts = self._gather_formatted_parts(expr.right)
+            return left_parts + right_parts
+        return []
+
+    def _contains_formatted_expression(self, expr: cst.BaseExpression) -> bool:
+        """Check whether an expression includes any formatted strings."""
+        if isinstance(expr, cst.FormattedString):
+            return True
+        if isinstance(expr, cst.BinaryOperation) and isinstance(expr.operator, cst.Add):
+            return self._contains_formatted_expression(
+                expr.left,
+            ) or self._contains_formatted_expression(expr.right)
+        return False
+
+    def _flatten_format_spec(
+        self,
+        format_spec: cst.BaseExpression | tuple[cst.CSTNode, ...],
+    ) -> str | None:
+        """Extract a literal format spec; return None when it contains expressions or complex nodes."""
+        if not format_spec:
+            return ""
+        nodes = format_spec if isinstance(format_spec, tuple) else (format_spec,)
+        parts: list[str] = []
+        for node in nodes:
+            if isinstance(node, cst.FormattedStringText):
+                parts.append(node.value)
+            else:
+                return None
+        return "".join(parts)
 
     def _format_code(self, content: str) -> str:
         """Format the given Python source code using Black and ensure a final newline.
@@ -264,12 +309,12 @@ class Visitor(ast.NodeVisitor):
             node: The AST node representing the function call.
         """
         if (
-            not isinstance(node.func, ast.Attribute)
-            or not isinstance(node.func.value, ast.Name)
-            or (not node.func.value.id.lower().startswith("log"))
-            or (node.func.attr not in {"debug", "info", "warning", "error", "critical"})
-            or (not node.args)
-            or (not isinstance(node.args[0], ast.JoinedStr))
+            isinstance(node.func, ast.Attribute)
+            and isinstance(node.func.value, ast.Name)
+            and node.func.value.id.lower().startswith("log")
+            and (node.func.attr in {"debug", "info", "warning", "error", "critical"})
+            and node.args
+            and isinstance(node.args[0], ast.JoinedStr)
         ):
             print(f"Found possible f-string in logging call: {ast.dump(node)}")
         self.generic_visit(node)

@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.7
+    rev: v0.14.8
     hooks:
       - id: ruff
         args:
@@ -20,6 +20,11 @@ repos:
       - id: mypy
         args: ["--ignore-missing-imports"]
         files: ^(?!(tests/)).*\.py$
+  - repo: https://github.com/dmar1n/lazy-log-formatter
+    rev: 0.10.7
+    hooks:
+      - id: lazy-log-formatter
+        args: ["--fix"]
   - repo: https://github.com/tox-dev/pyproject-fmt
     rev: v2.11.1
     hooks:

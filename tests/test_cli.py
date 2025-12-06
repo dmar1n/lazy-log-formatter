@@ -1,204 +1,171 @@
-import tempfile
 from pathlib import Path
 
-from hypothesis import assume, given
-from hypothesis import strategies as st
-from pytest import fixture, mark
-
+from lazy_log import cli
 from lazy_log.cli import process_file
-from lazy_log.transformer import Transformer
-
-TEST_DATA = [
-    (
-        'logging.error(f"Python version: {sys.version}")',
-        'logging.error("Python version: %s", sys.version)',
-    ),
-    ('call.warning(f"Value is {value}")', 'call.warning(f"Value is {value}")'),
-    (
-        'logging.info(f"User {user.username} logged in")',
-        'logging.info("User %s logged in", user.username)',
-    ),
-    ('logger.warning(f"Value is {value}")', 'logger.warning("Value is %s", value)'),
-    (
-        'logger.debug(f"Current time: {datetime.now()}")',
-        'logger.debug("Current time: %s", datetime.now())',
-    ),
-    (
-        'logger.critical(f"Error occurred: {error_message}")',
-        'logger.critical("Error occurred: %s", error_message)',
-    ),
-    (
-        'logger.info(f"Sum of {a} and {b} is {a + b}")',
-        'logger.info("Sum of %s and %s is %s", a, b, a + b)',
-    ),
-    (
-        'logger.info(f"Pi rounded to 2 decimals: {pi:.2f}")',
-        'logger.info("Pi rounded to 2 decimals: %.2f", pi)',
-    ),
-    (
-        'logger.info(f"Multiple values: {a}, {b}, and {c}")',
-        'logger.info("Multiple values: %s, %s, and %s", a, b, c)',
-    ),
-    (
-        'logger.info(f"Escape percent: {value} %")',
-        'logger.info("Escape percent: %s %%", value)',
-    ),
-    ('logger.info(f"User debug: {info=}")', 'logger.info("User debug: info=%s", info)'),
-    ('logger.info("No f-string here")', 'logger.info("No f-string here")'),
-    (
-        """logger.info(f'Nested f-string: {f"{a} + {b} = {a + b}"}')""",
-        """logger.info("Nested f-string: %s", f"{a} + {b} = {a + b}")""",
-    ),
-    (
-        'logger.info(f"Formatted value: {value:.3f}")',
-        'logger.info("Formatted value: %.3f", value)',
-    ),
-    (
-        """logger.info(f"List items: {', '.join(items)}")""",
-        'logger.info("List items: %s", ", ".join(items))',
-    ),
-    (
-        """logger.info(f"Dict value: {my_dict.get(key, 'default')}")""",
-        """logger.info("Dict value: %s", my_dict.get(key, "default"))""",
-    ),
-    (
-        'logger.info(f"Complex expression: {a * b + c}")',
-        'logger.info("Complex expression: %s", a * b + c)',
-    ),
-    (
-        'logger.info(f"Function result: {my_function()}")',
-        'logger.info("Function result: %s", my_function())',
-    ),
-    (
-        'logger.info(f"With percent: {value} %")',
-        'logger.info("With percent: %s %%", value)',
-    ),
-    ('logger.info(f"Escape brace: {{value}}")', 'logger.info("Escape brace: {value}")'),
-    (
-        'logger.info(f"Escape brace with percent: {{value}} %")',
-        'logger.info("Escape brace with percent: {value} %%")',
-    ),
-    (
-        'logger.info(f"Literal string with percent: %")',
-        'logger.info("Literal string with percent: %%")',
-    ),
-    (
-        'logger.info(f"Literal string with braces: {{}}")',
-        'logger.info("Literal string with braces: {}")',
-    ),
-    (
-        'logger.info(f"With braces and percent: {{}} %")',
-        'logger.info("With braces and percent: {} %%")',
-    ),
-    ('logger.info(f"Empty f-string: {{}}")', 'logger.info("Empty f-string: {}")'),
-    (
-        'logger.info(f"Empty f-string with percent: {{}} %")',
-        'logger.info("Empty f-string with percent: {} %%")',
-    ),
-    (
-        'self._logger.info(f"Empty f-string with braces: {{}}")',
-        'self._logger.info("Empty f-string with braces: {}")',
-    ),
-    (
-        '__logger.info(f"{value} created with specs: {self.__specs}")',
-        '__logger.info("%s created with specs: %s", value, self.__specs)',
-    ),
-    (
-        "# Logger usage without f-string remains unchanged",
-        "# Logger usage without f-string remains unchanged",
-    ),
-    (
-        'logger.info(f"Reading {len(paths):,} files for {name1} - {name2} - {service}...")',
-        'logger.info("Reading %s files for %s - %s - %s...", len(paths), name1, name2, service)',
-    ),
-    (
-        'logger.info(f"Value with sign: {value:+d}")',
-        'logger.info("Value with sign: %+d", value)',
-    ),
-    (
-        'logger.info(f"On {datetime.now()} temperature in {city} is {temp:.2f}°C.")',
-        'logger.info("On %s temperature in %s is %.2f°C.", datetime.now(), city, temp)',
-    ),
-]
-
-STANDARD_LOGGING_IMPORT = (
-    'import logging\nname = "pytest"\nlogging.info(f"Hello, {name}!")\n'
-)
-NON_STANDARD_LOGGING_IMPORT = (
-    'from loguru import logger\nname = "pytest"\nlogger.info(f"Hello, {name}!")\n'
-)
 
 
-@fixture(scope="function", params=["standard", "non_standard"])
-def temp_logging_fstring_file(request):
-    """Fixture to create a temporary file with logging f-strings."""
-    content = (
-        STANDARD_LOGGING_IMPORT
-        if request.param == "standard"
-        else NON_STANDARD_LOGGING_IMPORT
+def test_process_file_missing_file_returns_one(tmp_path):
+    assert process_file(tmp_path / "missing_file.py", fix=False) == 1
+
+
+def test_process_file_skips_when_logging_not_imported(tmp_path):
+    target = tmp_path / "script.py"
+    target.write_text('name = "tester"\nlogger.info(f"{name}")', encoding="utf-8")
+
+    result = process_file(target, fix=True, check_import=True)
+
+    assert result == 0
+    assert 'logger.info(f"{name}")' in target.read_text(encoding="utf-8")
+
+
+def test_process_file_fix_applies_and_writes(tmp_path):
+    target = tmp_path / "script.py"
+    target.write_text(
+        'import logging\nname = "tester"\nlogging.info(f"Hello {name}")',
+        encoding="utf-8",
     )
-    with tempfile.NamedTemporaryFile(
-        delete=False, suffix=".py", mode="w", encoding="utf-8"
-    ) as temp_file:
-        temp_file.write(content)
-        temp_file_path = Path(temp_file.name)
-    yield temp_file_path
-    temp_file_path.unlink(missing_ok=True)
+
+    result = process_file(target, fix=True, check_import=True)
+
+    updated = target.read_text(encoding="utf-8")
+    assert result == 1
+    assert 'logging.info("Hello %s", name)' in updated
 
 
-class TestDataForSanity:
-    @mark.parametrize("content, expected", TEST_DATA)
-    def test_sanity(self, content, expected):
-        assert isinstance(content, str)
-        assert isinstance(expected, str)
+def test_process_file_without_fix_reports_and_leaves_file(tmp_path, capsys):
+    target = tmp_path / "script.py"
+    target.write_text(
+        'import logging\nname = "tester"\nlogging.info(f"Hello {name}")',
+        encoding="utf-8",
+    )
 
-    def test_valid_py_syntax(self):
-        for content, expected in TEST_DATA:
-            try:
-                compile(content, "<string>", "exec")
-                compile(expected, "<string>", "exec")
-            except SyntaxError as e:
-                assert False, f"Syntax error in test data: {e}"
+    result = process_file(target, fix=False, check_import=True)
 
-
-class TestConvertFStringsToPercentFormat:
-    @mark.parametrize("content, expected", TEST_DATA)
-    def test_transform(self, content, expected):
-        transformer = Transformer(Path(), check_import=False)
-        result = transformer.run(content)
-
-        normalized_result = result.strip()
-        normalized_expected = expected.strip()
-
-        assert normalized_result == normalized_expected, (
-            f"Expected {normalized_expected}, but got {normalized_result}"
-        )
+    output, _ = capsys.readouterr()
+    content = target.read_text(encoding="utf-8")
+    assert result == 1
+    assert "F-strings found in" in output
+    assert "script.py" in output
+    assert 'logging.info(f"Hello {name}")' in content
 
 
-class TestTransformerHypothesis:
-    @given(st.from_regex(r'f["\'][^\n]+["\']', fullmatch=True))
-    def test_fstring_transformation_does_not_crash(self, text):
-        assume("\x00" not in text)
-        # The transformer should not raise exceptions on any f-string
-        transformer = Transformer(Path(), check_import=False)
-        try:
-            transformer.run(text)
-        except (ValueError, SyntaxError, TypeError) as e:
-            assert False, f"Transformer crashed on input: {text} with error: {e}"
+def test_process_file_without_issues_returns_zero(tmp_path):
+    target = tmp_path / "clean.py"
+    target.write_text(
+        'import logging\nname = "tester"\nlogging.info("Hello %s", name)',
+        encoding="utf-8",
+    )
+
+    result = process_file(target, fix=False, check_import=True)
+
+    assert result == 0
+    assert 'logging.info("Hello %s", name)' in target.read_text(encoding="utf-8")
 
 
-class TestTransformerWithFiles:
-    def test_transform_file(self, tmp_path):
-        temp_file = tmp_path / "temp_test_file.py"
-        temp_file.write_text(
-            'import logging\nname = "world"\nlogging.info(f"Hello, {name}!")',
-            encoding="utf-8",
-        )
+def test_main_processes_file_and_prints_success(monkeypatch, tmp_path):
+    target = tmp_path / "script.py"
+    target.write_text("print('hi')", encoding="utf-8")
+    calls: list[tuple[Path, bool]] = []
 
-        process_file(temp_file, fix=True, check_import=True)
-        with open(temp_file, "r", encoding="utf-8") as file:
-            content = file.read()
-        if "import logging" in content:
-            assert 'logging.info("Hello, %s!", name)' in content
-        else:
-            assert NON_STANDARD_LOGGING_IMPORT in content
+    def fake_process(file_path, fix, check_import=False):
+        calls.append((Path(file_path), fix))
+        return 0
+
+    messages: list[str] = []
+    monkeypatch.setattr(cli, "process_file", fake_process)
+    monkeypatch.setattr(cli, "print_with_fallback", lambda msg: messages.append(msg))
+
+    exit_code = cli.main([str(target)])
+
+    assert exit_code == 0
+    assert calls == [(target.resolve(), False)]
+    assert messages and "Scanned 1 files" in messages[0]
+
+
+def test_main_passes_fix_flag(monkeypatch, tmp_path):
+    target = tmp_path / "fixme.py"
+    target.write_text("print('hi')", encoding="utf-8")
+    seen: dict[str, bool] = {}
+
+    def fake_process(file_path, fix, check_import=False):
+        seen["fix"] = fix
+        return 0
+
+    monkeypatch.setattr(cli, "process_file", fake_process)
+    monkeypatch.setattr(cli, "print_with_fallback", lambda msg: None)
+
+    exit_code = cli.main([str(target), "--fix"])
+
+    assert exit_code == 0
+    assert seen["fix"] is True
+
+
+def test_main_excludes_paths(monkeypatch, tmp_path):
+    keep = tmp_path / "keep.py"
+    skip = tmp_path / "skip.py"
+    keep.write_text("print('keep')", encoding="utf-8")
+    skip.write_text("print('skip')", encoding="utf-8")
+    called: list[str] = []
+
+    def fake_process(file_path, fix, check_import=False):
+        called.append(Path(file_path).name)
+        return 0
+
+    monkeypatch.setattr(cli, "process_file", fake_process)
+    monkeypatch.setattr(cli, "print_with_fallback", lambda msg: None)
+
+    exit_code = cli.main([str(tmp_path), "--exclude", "skip.py"])
+
+    assert exit_code == 0
+    assert called == ["keep.py"]
+
+
+def test_main_skips_virtualenv_files(monkeypatch, tmp_path):
+    venv_dir = tmp_path / ".venv"
+    venv_dir.mkdir()
+    (venv_dir / "ignored.py").write_text("print('ignore')", encoding="utf-8")
+    included = tmp_path / "run.py"
+    included.write_text("print('run')", encoding="utf-8")
+    processed: list[str] = []
+
+    def fake_process(file_path, fix, check_import=False):
+        processed.append(Path(file_path).name)
+        return 0
+
+    monkeypatch.setattr(cli, "process_file", fake_process)
+    monkeypatch.setattr(cli, "print_with_fallback", lambda msg: None)
+
+    exit_code = cli.main([str(tmp_path)])
+
+    assert exit_code == 0
+    assert processed == ["run.py"]
+
+
+def test_main_warns_on_invalid_path(monkeypatch, capsys):
+    monkeypatch.setattr(
+        cli,
+        "process_file",
+        lambda *args, **kwargs: iter(()).throw(
+            AssertionError("process_file should not be called")
+        ),
+    )
+
+    exit_code = cli.main(["does_not_exist.py"])
+
+    output, error = capsys.readouterr()
+    assert exit_code == 0
+    assert "not a valid file or directory" in error
+    assert output == ""
+
+
+def test_main_returns_one_when_issues_found(monkeypatch, tmp_path):
+    target = tmp_path / "script.py"
+    target.write_text("print('hi')", encoding="utf-8")
+    monkeypatch.setattr(cli, "process_file", lambda *args, **kwargs: 1, raising=False)
+    messages: list[str] = []
+    monkeypatch.setattr(cli, "print_with_fallback", lambda msg: messages.append(msg))
+
+    exit_code = cli.main([str(target)])
+
+    assert exit_code == 1
+    assert not messages
